@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.0.0)
+project(myHttpServer VERSION 0.1.0)
+
+include(CTest)
+enable_testing()
+find_package(Threads)
+
+set(HttpServer_SOURCE_FILES
+        src/httpserver.cpp
+        src/ThreadPool.cpp
+        )
+# add_executable(httpServer src/httpserver.cpp)
+add_executable(httpServer ${HttpServer_SOURCE_FILES})
+target_link_libraries(httpServer ${CMAKE_THREAD_LIBS_INIT})
+
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(CPack)
