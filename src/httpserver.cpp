@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdio.h>
 #include <string>
 #include <string.h>
 #include <sys/socket.h>
@@ -10,36 +11,26 @@
 #include <pthread.h>
 #include <list>
 #include <vector>
+#include <exception>
+#include <unistd.h>
 #include "ThreadPool.h"
+#include "utils.h"
+#include "HttpData.h"
+
 
 // using namespace std;
-using std::string; using std::cout; using std::endl;
+using std::string; using std::exception; using std::runtime_error;
+using std::cout; using std::endl;
 
+const int BUFFERSIZE = 1024;
 
 
 void httpserver( int clientSocketFd ){
-    char buffer[64];
-    int ret = 0;
-    while( true ){
-        printf("wait message\n");
-        ret = recv( clientSocketFd, buffer, 64, 0);  // fixme 从工作队列中取得socketfd
-        if( ret == -1 ){
-            printf("recv error!\n");
-        }
-        else{
-            printf("get message{%s}\n", buffer);
-            ret = send( clientSocketFd, buffer, ret, 0);
-            if( ret == -1) printf("send error!\n");
-            else{
-                if( string("exit") == string(buffer) ){
-                    printf("client disconnect\n");
-                    break;
-                }
-            }
-        }
-        
-    }
-    return;
+    HttpData httpData( clientSocketFd );
+    httpData.parseData();
+    printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_s().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
+    sendHello(clientSocketFd);
+    close(clientSocketFd);
 }
 
 
@@ -57,29 +48,27 @@ int main(){
 
 
     int socketfd = socket( AF_INET, SOCK_STREAM, 0 );
+    if( socketfd == -1 ) throw runtime_error("socket create failed\n");
+    printf("socket create success\n");
+    
+    setPortReuse( socketfd );
 
     struct sockaddr_in ipaddr;
     ipaddr.sin_family = AF_INET;
     ipaddr.sin_port = htons( port );
-    ipaddr.sin_addr.s_addr = inet_addr( ip.c_str() );
+    ipaddr.sin_addr.s_addr = inet_addr( ip.c_str() );  
+
 
     int ret = bind( socketfd, reinterpret_cast< struct sockaddr*>( &ipaddr ), sizeof( ipaddr ) );
-    if( ret == -1 ){
-        cout << "bind ipaddr failed" << endl;
-        return -1;
-    }
+    if( ret == -1 ) throw runtime_error("bind ipaddr failed\n");
+    printf("bind ipaddr create success\n");
 
     ret = listen( socketfd, 20 );
-    if( ret == -1 ){
-        cout << "call listen failed" << endl;
-        return -1;
-    }
+    if( ret == -1 ) throw runtime_error("call listen failed");
+    printf("listen create success\n");
 
-    char buffer[64];
     struct sockaddr_in clientaddr;
     socklen_t clientaddrLength = sizeof( clientaddr );
-
-
 
     // int clientsocketfd = accept( socketfd, reinterpret_cast< struct sockaddr*> ( &clientaddr ), &clientaddrLength);
 
@@ -93,6 +82,7 @@ int main(){
 
     struct epoll_event epollEvents[5];
     ThreadPool threadPool(httpserver);
+    printf("TheadPool create success\n");
     
     while(true){
         ret = epoll_wait( epollFd, epollEvents, 5, -1 );

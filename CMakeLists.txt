@@ -8,6 +8,8 @@ find_package(Threads)
 set(HttpServer_SOURCE_FILES
         src/httpserver.cpp
         src/ThreadPool.cpp
+        src/utils.cpp
+        src/HttpData.cpp
         )
 # add_executable(httpServer src/httpserver.cpp)
 add_executable(httpServer ${HttpServer_SOURCE_FILES})
