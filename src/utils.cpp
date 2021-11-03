@@ -13,13 +13,23 @@ void setPortReuse( int socketfd ){
 
 void sendHello( int sockedfd ){
     char buf[128];
+
     sprintf(buf, "HTTP/1.0 200 OK\r\n");
     send(sockedfd, buf, strlen(buf), 0);
+
     sprintf(buf, "Content-type: text/html\r\n");
     send(sockedfd, buf, strlen(buf), 0);
+
     sprintf(buf, "\r\n");
     send(sockedfd, buf, strlen(buf), 0);
+
     sprintf(buf, "<P>Hello!\r\n");
     send(sockedfd, buf, strlen(buf), 0);
-    printf("send hello!\n");
+
+    // sleep(1);
+    printf("send hello finish!\n");
+}
+
+void dispAddrInfo( struct sockaddr_in &addr){
+    printf("client addr:%s, port:%d\n", inet_ntoa( addr.sin_addr ), ntohs( addr.sin_port ) );
 }

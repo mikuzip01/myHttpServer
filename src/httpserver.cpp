@@ -28,9 +28,11 @@ const int BUFFERSIZE = 1024;
 void httpserver( int clientSocketFd ){
     HttpData httpData( clientSocketFd );
     httpData.parseData();
-    printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_s().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
+    printf("\nrequset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_s().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
     sendHello(clientSocketFd);
+    printf("%s\n", httpData.getUserAgent().c_str() );
     close(clientSocketFd);
+    // shutdown( clientSocketFd, SHUT_RDWR );
 }
 
 
@@ -77,7 +79,7 @@ int main(){
     memset( &socketEvent, 0, sizeof( socketEvent ) );
     setFdNonblock( socketfd );
     socketEvent.data.fd = socketfd;
-    socketEvent.events = ( EPOLLIN | EPOLLET );
+    socketEvent.events = ( EPOLLIN | EPOLLET ); // 边缘触发模式
     epoll_ctl( epollFd, EPOLL_CTL_ADD, socketfd, &socketEvent); // socketfd在epoll_event需要设置在epoll_ctl()函数中也需要设置？
 
     struct epoll_event epollEvents[5];
@@ -89,6 +91,7 @@ int main(){
         for( int i = 0; i < ret; ++i ){
             if ( epollEvents[i].data.fd == socketfd ) {
                 int clientSocketFd = accept( socketfd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength );
+                dispAddrInfo( clientaddr );
                 threadPool.appendFd( clientSocketFd );
                 threadPool.notifyOneThread();
             }
