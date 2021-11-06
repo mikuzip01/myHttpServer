@@ -1,3 +1,6 @@
+#ifndef __THREADPOOL__
+#define __THREADPOOL__
+
 #include <vector>
 #include <list>
 #include <pthread.h>
@@ -101,3 +104,4 @@ private:
     static void* worker( void* args );  // 非静态成员函数也不可以作为pthread_create的入口
 };
 
+#endif

@@ -10,6 +10,8 @@ set(HttpServer_SOURCE_FILES
         src/ThreadPool.cpp
         src/utils.cpp
         src/HttpData.cpp
+        src/Responser.cpp
+        src/Pages.cpp
         )
 # add_executable(httpServer src/httpserver.cpp)
 add_executable(httpServer ${HttpServer_SOURCE_FILES})

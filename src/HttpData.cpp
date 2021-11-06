@@ -1,5 +1,8 @@
 #include "HttpData.h"
 
+const string NULLINFO("NULL");
+
+
 HttpData::HttpData(int clientSocket) : prev( 0 ), clientSocket( clientSocket ), readIndex( HTTPDATA_BUFFERSIZE ), dataEndIndex( HTTPDATA_BUFFERSIZE - 1 ){
     memset( dataBuffer, 0, HTTPDATA_BUFFERSIZE);
 }
@@ -9,17 +12,14 @@ void HttpData::parseData(){
     parseHeader();
 }
 
-bool HttpData::dataBufferEmpty(){
-    return readIndex > dataEndIndex || readIndex >= HTTPDATA_BUFFERSIZE;
-}
-
-
 void HttpData::parseStartLine(){
     string firstLine( parseOneLine() );
     vector<string> headerInfo;
     stringSplit( firstLine, headerInfo, " " );
     getRequestMethod( headerInfo );
     url = headerInfo[ 1 ];
+    if( url == "/" ) url = "/index.html";
+    url = "www" + url;
     version = headerInfo [ 2 ];
 }
 
@@ -91,15 +91,4 @@ void HttpData::getRequestMethod( const vector<string>& headerInfo ){
     if( headerInfo[0] == "GET" ) { requestMethod = RequestMethod::GET; requestMethod_string = "GET"; }
     else if( headerInfo[0] == "POST" ) { requestMethod = RequestMethod::POST; requestMethod_string = "POST"; }
     else { requestMethod = RequestMethod::UNSUPPORT; requestMethod_string = "UNSUPPORT"; }
-}
-
-const string& HttpData::getUrl(){
-    return url;
-}
-
-const string& HttpData::getRequestMethod_s(){
-    return requestMethod_string;
-}
-const string& HttpData::getVersion(){
-    return version;
 }

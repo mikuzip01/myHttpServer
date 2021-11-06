@@ -1,3 +1,6 @@
+#ifndef __HTTPDATA__
+#define __HTTPDATA__
+
 #include <sys/socket.h>
 #include <string.h>
 #include <exception>
@@ -10,7 +13,7 @@
 using std::string; using std::vector;
 using std::shared_ptr;
 
-const string NULLINFO("NULL");
+extern const string NULLINFO;
 
 // 专门用于处理和客户机http数据的交互
 const int HTTPDATA_BUFFERSIZE = 64;
@@ -19,11 +22,16 @@ const int LINE_BUFFERSIZE = 256;
 class HttpData{
 public:
     HttpData(int clientSocket);
+    enum RequestMethod{ UNSUPPORT, GET, POST };
+    // 解析从客户机发来的所有信息
     void parseData();
-    const string& getUrl();
-    const string& getRequestMethod_s();
-    const string& getVersion();
-    const string& getUserAgent(){ return userAgent ? *userAgent : NULLINFO; }
+    const string& getUrl() const { return url; }
+    const string& getRequestMethod_string() const { return requestMethod_string; }
+    const int getRequestMethod() const { return requestMethod; }
+    const string& getVersion() const { return version; }
+    const string& getUserAgent() const { return userAgent ? *userAgent : NULLINFO; }
+    int getClientSocket() const { return clientSocket; }
+
 private:
     // 根据CRLF标志符，将套接字中的数据分行取出。读取成功的最后\r\n会被替换成\0
     string parseOneLine(); // 一次性从recv中读出一大段数据后续在来处理代替利用recv每次只从缓冲区取一个字符出来。理论上系统调用会有不少开销，以此减少对recv的调用次数
@@ -34,7 +42,7 @@ private:
     void parseHeader();
     // 从套接字中取出一段数据
     void readRawDataFromSocket();
-    bool dataBufferEmpty();
+    inline bool dataBufferEmpty(){ return readIndex > dataEndIndex || readIndex >= HTTPDATA_BUFFERSIZE; };
     // 获得请求头的名称
     string getHeaderLineName( string &s );
 
@@ -49,7 +57,9 @@ private:
     char prev;
 
     // data
-    enum RequestMethod{ UNSUPPORT, GET, POST } requestMethod;
+    RequestMethod requestMethod;
     string requestMethod_string, url, version;
     shared_ptr<string> host, userAgent, accept, acceptLanguage, acceptEncoding, connection, upgradeInsecurceRequests, contentType, contentLength; // 弄成堆上对象，因为有可能为空。用智能指针来管理
 };
+
+#endif

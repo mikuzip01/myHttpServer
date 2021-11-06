@@ -16,9 +16,9 @@
 #include "ThreadPool.h"
 #include "utils.h"
 #include "HttpData.h"
+#include "Responser.h"
 
 
-// using namespace std;
 using std::string; using std::exception; using std::runtime_error;
 using std::cout; using std::endl;
 
@@ -28,9 +28,16 @@ const int BUFFERSIZE = 1024;
 void httpserver( int clientSocketFd ){
     HttpData httpData( clientSocketFd );
     httpData.parseData();
-    printf("\nrequset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_s().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
-    sendHello(clientSocketFd);
+
+    Responser responser( httpData );
+
+    printf("\nrequset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
     printf("%s\n", httpData.getUserAgent().c_str() );
+
+    if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
+        responser.sendStaticFileToClient();
+    }
+
     close(clientSocketFd);
     // shutdown( clientSocketFd, SHUT_RDWR );
 }
