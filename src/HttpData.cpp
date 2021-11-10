@@ -10,6 +10,7 @@ HttpData::HttpData(int clientSocket) : prev( 0 ), clientSocket( clientSocket ), 
 void HttpData::parseData(){
     parseStartLine();
     parseHeader();
+    if( requestMethod == POST ) parsePostData();
 }
 
 void HttpData::parseStartLine(){
@@ -37,7 +38,7 @@ void HttpData::parseHeader(){
         else if( headName == "Connection" ) connection = std::make_shared< string >( std::move( line ) );
         else if( headName == "Upgrade-Insecure-Requests" ) upgradeInsecurceRequests = std::make_shared< string >( std::move( line ) );
         else if( headName == "Content-Type" ) contentType = std::make_shared< string >( std::move( line ) );
-        else if( headName == "ConTent-Length" ) contentLength = std::make_shared< string >( std::move( line ) );
+        else if( headName == "Content-Length" ) contentLength = std::make_shared< string >( std::move( line ) );
     }
 }
 
@@ -70,7 +71,7 @@ string HttpData::parseOneLine(){
 // 从套接字中取出一段数据
 void HttpData::readRawDataFromSocket(){
     int dataNum = recv( clientSocket, dataBuffer, HTTPDATA_BUFFERSIZE, 0);
-    if( dataNum < 0 ) throw std::exception();
+    if( dataNum < 0 ) throw std::runtime_error("recv error!");
     readIndex = 0;
     dataEndIndex = dataNum - 1;
 }
@@ -91,4 +92,47 @@ void HttpData::getRequestMethod( const vector<string>& headerInfo ){
     if( headerInfo[0] == "GET" ) { requestMethod = RequestMethod::GET; requestMethod_string = "GET"; }
     else if( headerInfo[0] == "POST" ) { requestMethod = RequestMethod::POST; requestMethod_string = "POST"; }
     else { requestMethod = RequestMethod::UNSUPPORT; requestMethod_string = "UNSUPPORT"; }
+}
+
+int HttpData::numeralContentLength(){
+    int i = 0;
+    while( (*contentLength)[i] != ' ' ) ++i;
+    ++i;
+    return std::stoi( (*contentLength).substr( i, (*contentLength).size() - i ) );
+}
+
+void HttpData::parsePostData(){
+    int contentLength = numeralContentLength();
+    char* data = new char[ contentLength + 2 ];
+    postBodyData = std::make_shared< std::unordered_map< string, string> >();
+
+    int index = 0;
+    // 读取剩余的所有字节数据到变量data
+    while( readIndex <= dataEndIndex ){
+        data[ index ]= dataBuffer[ readIndex ];
+        ++index;
+        ++readIndex;
+        if( index == contentLength ) break;
+        if( readIndex > dataEndIndex ) readRawDataFromSocket();
+    }
+    // fixme 目前只考虑了application/x-www-form-urlencoded的post数据格式
+    data[ contentLength ] = '&'; // 手动将最后一位设置为&方便后续的处理
+    data[ contentLength + 1 ] = 0;
+
+    string s_data( data );
+    // 按规则切割post的数据
+    int cur = 0, prev = 0; // 用于分割&
+    int start = 0 , mid = 0, end = 0; // 用于分割=
+    while( cur <= contentLength ){ // 注意cur的退出条件, 值有可能为空
+        while( data[ cur ] != '&' ) ++cur;
+        start = prev;
+        mid = start;
+        while( data[ mid ] != '=' ) ++mid;
+        end = cur - 1;
+        if( end == mid ) (*postBodyData)[ s_data.substr ( start, mid - start ) ] = "";
+        else (*postBodyData)[ s_data.substr ( start, mid - start ) ] = s_data.substr( mid + 1, end - mid );
+        ++cur;
+        prev = cur;
+    } 
+    delete data;
 }

@@ -37,6 +37,7 @@ void httpserver( int clientSocketFd ){
     if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
         responser.sendStaticFileToClient();
     }
+    
 
     close(clientSocketFd);
     // shutdown( clientSocketFd, SHUT_RDWR );

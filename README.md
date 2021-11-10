@@ -65,9 +65,15 @@
 
 # TODO LIST
 
-done 传输浏览器指定的静态网页
+Done 传输浏览器指定的静态网页
 
-todo 处理接收POST的每一个提交的字段
+todo 处理接收POST的每一个提交的字段。根据标准POST总共有3种形式，[详见这里](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/form#attr-enctype)
+
+    Done application/x-www-form-urlencoded：未指定属性时的默认值
+
+    todo multipart/form-data：当表单包含 type=file 的 <input> 元素时使用此值。
+
+    todo text/plain：出现于 HTML5，用于调试。
 
 todo 实现CGI
 

@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <unordered_map>
 
 using std::string; using std::vector;
 using std::shared_ptr;
@@ -40,6 +41,10 @@ private:
     void parseStartLine();
     // 解析剩余的头部信息
     void parseHeader();
+    // 读取body中的POST数据
+    void parsePostData();
+    // 将content-length字符串转换为数字
+    int numeralContentLength();
     // 从套接字中取出一段数据
     void readRawDataFromSocket();
     inline bool dataBufferEmpty(){ return readIndex > dataEndIndex || readIndex >= HTTPDATA_BUFFERSIZE; };
@@ -60,6 +65,7 @@ private:
     RequestMethod requestMethod;
     string requestMethod_string, url, version;
     shared_ptr<string> host, userAgent, accept, acceptLanguage, acceptEncoding, connection, upgradeInsecurceRequests, contentType, contentLength; // 弄成堆上对象，因为有可能为空。用智能指针来管理
+    shared_ptr< std::unordered_map< string, string > > postBodyData;  // 利用哈希表保存post中的键值对
 };
 
 #endif
