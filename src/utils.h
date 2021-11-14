@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 
 
@@ -15,5 +16,8 @@ void parseLineFromSocket( char* buffer, const int buffSisze);
 void setPortReuse( int socketfd );
 void sendHello( int sockedfd );
 void dispAddrInfo( struct sockaddr_in &addr);
+
+// 输入文件路径，判断文件是否存在
+bool fileExist(const char [] );
 
 #endif

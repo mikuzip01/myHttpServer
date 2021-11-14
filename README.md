@@ -13,6 +13,10 @@
 
 每个**使用ET模式**的文件描述符都应该是**非阻塞**的。如果文件描述符是阻塞的，那么读或写操作将会因为没有后续的事件而一直处于阻塞状态（饥渴状态）
 
+使用Perl进行CGI处理时，content type和空白CRLF将由Perl进行构成而不是HTTP服务器本身
+
+CGI的输出承担的是HTTP协议的响应部分，因此HTTP响应报头也要自己标准输出出来。
+
 # 问题
 ## 关闭客户端链接时行为不正常
 
@@ -62,12 +66,28 @@
 
 删除多余的send
 
+## 在CGI模块陷入死循环
+
+**Q**
+
+如题
+
+**原因**
+
+“EOF”的那个break语句没有被正常触发，原因未知
+
+**解决方案**
+
+通过环境变量传递参数个数的方式（getenv）代替通过scanf（stdin）
+
 
 # TODO LIST
 
 Done 传输浏览器指定的静态网页
 
-todo 处理接收POST的每一个提交的字段。根据标准POST总共有3种形式，[详见这里](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/form#attr-enctype)
+todo 解析GET请求中的查询参数
+
+Doing 处理接收POST的每一个提交的字段。根据标准POST总共有3种形式，[详见这里](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/form#attr-enctype)
 
     Done application/x-www-form-urlencoded：未指定属性时的默认值
 
@@ -75,5 +95,23 @@ todo 处理接收POST的每一个提交的字段。根据标准POST总共有3种
 
     todo text/plain：出现于 HTML5，用于调试。
 
-todo 实现CGI
+Done 对请求资源后缀的判断，以此来区分请求的是静态网页还是CGI
+
+Doing 实现CGI
+
+    todo 不需要输入数据的CGI网页
+
+    Done 可以反射用户POST输入参数的CGI网页
+
+todo 错误输入数据的鲁棒性
+
+todo 长链接keep connection
+
+todo 处理输入的URL，使其对大小写不敏感
+
+Done 对无对应资源的URL的404处理需要重新安排
+
+# 可能存在的BUG
+
+fixme 在解析http数据判断换行时，固定的是CRLF，有没有可能出现只用LF进行换行的情况？
 

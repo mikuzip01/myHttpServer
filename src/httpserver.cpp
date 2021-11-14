@@ -31,16 +31,19 @@ void httpserver( int clientSocketFd ){
 
     Responser responser( httpData );
 
-    printf("\nrequset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
+    printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
     printf("%s\n", httpData.getUserAgent().c_str() );
 
-    if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
-        responser.sendStaticFileToClient();
-    }
-    
+    if( !fileExist( httpData.getUrl().c_str() ) ){ responser.sendNotFound(); return; }
 
-    close(clientSocketFd);
-    // shutdown( clientSocketFd, SHUT_RDWR );
+    if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
+        if( httpData.getUrlResourceType() == "html") responser.sendStaticFileToClient();
+        else responser.sendNotFound();
+    }
+    else if( httpData.getRequestMethod() == HttpData::RequestMethod::POST ){
+        if( httpData.getUrlResourceType() == "cgi" ) responser.executeCGI();
+        else responser.sendNotFound();
+    }
 }
 
 
@@ -74,7 +77,7 @@ int main(){
     printf("bind ipaddr create success\n");
 
     ret = listen( socketfd, 20 );
-    if( ret == -1 ) throw runtime_error("call listen failed");
+    if( ret == -1 ) throw runtime_error("call listen failed\n");
     printf("listen create success\n");
 
     struct sockaddr_in clientaddr;
@@ -99,6 +102,7 @@ int main(){
         for( int i = 0; i < ret; ++i ){
             if ( epollEvents[i].data.fd == socketfd ) {
                 int clientSocketFd = accept( socketfd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength );
+                printf("\n");
                 dispAddrInfo( clientaddr );
                 threadPool.appendFd( clientSocketFd );
                 threadPool.notifyOneThread();

@@ -17,6 +17,8 @@ set(HttpServer_SOURCE_FILES
 add_executable(httpServer ${HttpServer_SOURCE_FILES})
 target_link_libraries(httpServer ${CMAKE_THREAD_LIBS_INIT})
 
+add_executable(postdataecho.cgi src/cgidemo.c)
+
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)

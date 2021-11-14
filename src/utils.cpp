@@ -33,3 +33,12 @@ void sendHello( int sockedfd ){
 void dispAddrInfo( struct sockaddr_in &addr){
     printf("client addr:%s, port:%d\n", inet_ntoa( addr.sin_addr ), ntohs( addr.sin_port ) );
 }
+
+bool fileExist(const char path [] ){
+    struct stat staticFileState;
+    int ret = stat( path, &staticFileState );
+    if( ret == -1 ){  // 没有对应的文件和文件夹或拒绝存取
+        return false; 
+    }
+    else return true;
+}

@@ -20,7 +20,13 @@ void HttpData::parseStartLine(){
     getRequestMethod( headerInfo );
     url = headerInfo[ 1 ];
     if( url == "/" ) url = "/index.html";
-    url = "www" + url;
+
+    // 计算url的后缀
+    auto suffixStartIndex = url.find_last_of('.');
+    if( suffixStartIndex == string::npos ) urlResourceType = NULLINFO;
+    else urlResourceType = url.substr( suffixStartIndex + 1 );
+
+    url = RESOURCE_ROOT + url;
     version = headerInfo [ 2 ];
 }
 
@@ -71,7 +77,7 @@ string HttpData::parseOneLine(){
 // 从套接字中取出一段数据
 void HttpData::readRawDataFromSocket(){
     int dataNum = recv( clientSocket, dataBuffer, HTTPDATA_BUFFERSIZE, 0);
-    if( dataNum < 0 ) throw std::runtime_error("recv error!");
+    if( dataNum < 0 ) throw std::runtime_error("recv error!\n");
     readIndex = 0;
     dataEndIndex = dataNum - 1;
 }
@@ -94,7 +100,7 @@ void HttpData::getRequestMethod( const vector<string>& headerInfo ){
     else { requestMethod = RequestMethod::UNSUPPORT; requestMethod_string = "UNSUPPORT"; }
 }
 
-int HttpData::numeralContentLength(){
+int HttpData::numeralContentLength() const{
     int i = 0;
     while( (*contentLength)[i] != ' ' ) ++i;
     ++i;

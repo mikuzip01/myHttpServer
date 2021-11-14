@@ -20,6 +20,9 @@ extern const string NULLINFO;
 const int HTTPDATA_BUFFERSIZE = 64;
 const int LINE_BUFFERSIZE = 256;
 
+// 存储资源的根目录路径
+const char RESOURCE_ROOT[] = "www";
+
 class HttpData{
 public:
     HttpData(int clientSocket);
@@ -31,7 +34,10 @@ public:
     const int getRequestMethod() const { return requestMethod; }
     const string& getVersion() const { return version; }
     const string& getUserAgent() const { return userAgent ? *userAgent : NULLINFO; }
+    const string& getUrlResourceType() const { return urlResourceType; }
+    int getContentLength() const { return contentLength ? numeralContentLength() : 0; }
     int getClientSocket() const { return clientSocket; }
+    const shared_ptr< std::unordered_map< string, string > > getPostBodyData() const { return postBodyData; }
 
 private:
     // 根据CRLF标志符，将套接字中的数据分行取出。读取成功的最后\r\n会被替换成\0
@@ -44,7 +50,7 @@ private:
     // 读取body中的POST数据
     void parsePostData();
     // 将content-length字符串转换为数字
-    int numeralContentLength();
+    int numeralContentLength() const;
     // 从套接字中取出一段数据
     void readRawDataFromSocket();
     inline bool dataBufferEmpty(){ return readIndex > dataEndIndex || readIndex >= HTTPDATA_BUFFERSIZE; };
@@ -63,7 +69,7 @@ private:
 
     // data
     RequestMethod requestMethod;
-    string requestMethod_string, url, version;
+    string requestMethod_string, url, urlResourceType, version;
     shared_ptr<string> host, userAgent, accept, acceptLanguage, acceptEncoding, connection, upgradeInsecurceRequests, contentType, contentLength; // 弄成堆上对象，因为有可能为空。用智能指针来管理
     shared_ptr< std::unordered_map< string, string > > postBodyData;  // 利用哈希表保存post中的键值对
 };
