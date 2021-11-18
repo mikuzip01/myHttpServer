@@ -37,7 +37,7 @@ public:
     const string& getUrlResourceType() const { return urlResourceType; }
     int getContentLength() const { return contentLength ? numeralContentLength() : 0; }
     int getClientSocket() const { return clientSocket; }
-    const shared_ptr< std::unordered_map< string, string > > getPostBodyData() const { return postBodyData; }
+    const shared_ptr< std::unordered_map< string, string > > getPostBodyData() const { return clientParamData; }
 
 private:
     // 根据CRLF标志符，将套接字中的数据分行取出。读取成功的最后\r\n会被替换成\0
@@ -48,7 +48,11 @@ private:
     // 解析剩余的头部信息
     void parseHeader();
     // 读取body中的POST数据
-    void parsePostData();
+    void parseBodyParamData();
+    // 读取url中的GET的参数
+    void parseUrlDataParamList();
+    // 解析字符串中的 key1=value1&key=value2& 参数，将键值对放入哈希表中。目前需要手动在输入字符的最后添加一个&
+    void parseStringParamTo_htable_clientParamData(string & );
     // 将content-length字符串转换为数字
     int numeralContentLength() const;
     // 从套接字中取出一段数据
@@ -71,7 +75,7 @@ private:
     RequestMethod requestMethod;
     string requestMethod_string, url, urlResourceType, version;
     shared_ptr<string> host, userAgent, accept, acceptLanguage, acceptEncoding, connection, upgradeInsecurceRequests, contentType, contentLength; // 弄成堆上对象，因为有可能为空。用智能指针来管理
-    shared_ptr< std::unordered_map< string, string > > postBodyData;  // 利用哈希表保存post中的键值对
+    shared_ptr< std::unordered_map< string, string > > clientParamData;  // 利用哈希表保存post/get中的键值对
 };
 
 #endif

@@ -10,7 +10,7 @@ HttpData::HttpData(int clientSocket) : prev( 0 ), clientSocket( clientSocket ), 
 void HttpData::parseData(){
     parseStartLine();
     parseHeader();
-    if( requestMethod == POST ) parsePostData();
+    if( requestMethod == POST ) parseBodyParamData();
 }
 
 void HttpData::parseStartLine(){
@@ -20,6 +20,8 @@ void HttpData::parseStartLine(){
     getRequestMethod( headerInfo );
     url = headerInfo[ 1 ];
     if( url == "/" ) url = "/index.html";
+
+    parseUrlDataParamList();
 
     // 计算url的后缀
     auto suffixStartIndex = url.find_last_of('.');
@@ -107,10 +109,9 @@ int HttpData::numeralContentLength() const{
     return std::stoi( (*contentLength).substr( i, (*contentLength).size() - i ) );
 }
 
-void HttpData::parsePostData(){
+void HttpData::parseBodyParamData(){
     int contentLength = numeralContentLength();
     char* data = new char[ contentLength + 2 ];
-    postBodyData = std::make_shared< std::unordered_map< string, string> >();
 
     int index = 0;
     // 读取剩余的所有字节数据到变量data
@@ -126,19 +127,33 @@ void HttpData::parsePostData(){
     data[ contentLength + 1 ] = 0;
 
     string s_data( data );
-    // 按规则切割post的数据
+    parseStringParamTo_htable_clientParamData( s_data );
+    delete data;
+}
+
+void HttpData::parseUrlDataParamList(){
+    int i = 0;
+    while( i < url.size() && url[ i ] != '?' ) ++i;
+    if( i == url.size() || i + 1 >= url.size() ) return; // 没有参数就直接结束
+    string paramStr = url.substr( i + 1 );
+    url = url.substr(0, i);
+    paramStr.push_back('&');
+    parseStringParamTo_htable_clientParamData( paramStr );
+}
+
+void HttpData::parseStringParamTo_htable_clientParamData(string & str){
+    if( clientParamData == nullptr ) clientParamData = std::make_shared< std::unordered_map< string, string> >();
     int cur = 0, prev = 0; // 用于分割&
     int start = 0 , mid = 0, end = 0; // 用于分割=
-    while( cur <= contentLength ){ // 注意cur的退出条件, 值有可能为空
-        while( data[ cur ] != '&' ) ++cur;
+    while( cur < str.size() ){ // 注意cur的退出条件, 值有可能为空
+        while( str[ cur ] != '&' ) ++cur;
         start = prev;
         mid = start;
-        while( data[ mid ] != '=' ) ++mid;
+        while( str[ mid ] != '=' ) ++mid;
         end = cur - 1;
-        if( end == mid ) (*postBodyData)[ s_data.substr ( start, mid - start ) ] = "";
-        else (*postBodyData)[ s_data.substr ( start, mid - start ) ] = s_data.substr( mid + 1, end - mid );
+        if( end == mid ) (*clientParamData)[ str.substr ( start, mid - start ) ] = "";
+        else (*clientParamData)[ str.substr ( start, mid - start ) ] = str.substr( mid + 1, end - mid );
         ++cur;
         prev = cur;
     } 
-    delete data;
 }

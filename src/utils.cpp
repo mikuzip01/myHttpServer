@@ -1,5 +1,7 @@
 #include "utils.h"
 
+char *memory_index_page = nullptr;
+
 void bufferPrinter(char* buffer, const int bufferSize){
     if( buffer[ bufferSize - 1 ] != '\0' ) buffer[ bufferSize - 1 ] = '\0';
     printf("%s\n", buffer);
@@ -41,4 +43,21 @@ bool fileExist(const char path [] ){
         return false; 
     }
     else return true;
+}
+
+void loadIndexTomemory( std::string file_path ){
+    struct stat staticFileState;
+    int ret = stat( file_path.c_str(), &staticFileState );
+    memory_index_page = new char[ staticFileState.st_size + 1 ];
+    FILE *resource = NULL;
+    resource = fopen( file_path.c_str() , "r");  // 以只读方法打开url指定的文件
+    char readBuf [ 256 ];
+    memset( readBuf, 0, 256 );
+    fgets(readBuf, 256, resource);  // 
+    while (!feof(resource))
+    {   
+        strcat( memory_index_page, readBuf );
+        fgets(readBuf, 256, resource);
+    }
+    fclose( resource );
 }

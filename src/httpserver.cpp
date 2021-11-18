@@ -34,10 +34,12 @@ void httpserver( int clientSocketFd ){
     printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
     printf("%s\n", httpData.getUserAgent().c_str() );
 
-    if( !fileExist( httpData.getUrl().c_str() ) ){ responser.sendNotFound(); return; }
+    if( !fileExist( httpData.getUrl().c_str() ) && httpData.getUrlResourceType() != "memory" ){ responser.sendNotFound(); return; }
 
     if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
         if( httpData.getUrlResourceType() == "html") responser.sendStaticFileToClient();
+        else if(httpData.getUrlResourceType() == "cgi") responser.executeCGI();
+        else if( httpData.getUrlResourceType() == "memory") responser.sendMemoryPage();
         else responser.sendNotFound();
     }
     else if( httpData.getRequestMethod() == HttpData::RequestMethod::POST ){
@@ -96,6 +98,9 @@ int main(){
     struct epoll_event epollEvents[5];
     ThreadPool threadPool(httpserver);
     printf("TheadPool create success\n");
+
+    loadIndexTomemory("www/index.html");
+    printf("load index page to memory success\n");
     
     while(true){
         ret = epoll_wait( epollFd, epollEvents, 5, -1 );

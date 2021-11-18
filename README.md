@@ -1,4 +1,11 @@
 # myHttpServer
+
+# 项目介绍
+
+RAII
+
+Reactor模型
+
 # 总体结构
 ## class TheadPool 线程池类 
 ## class HttpData 处理Http数据的 
@@ -85,7 +92,7 @@ CGI的输出承担的是HTTP协议的响应部分，因此HTTP响应报头也要
 
 Done 传输浏览器指定的静态网页
 
-todo 解析GET请求中的查询参数
+Done 解析GET请求中的查询参数/将post和get的参数解析到一个统一的对象中
 
 Doing 处理接收POST的每一个提交的字段。根据标准POST总共有3种形式，[详见这里](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/form#attr-enctype)
 
@@ -105,11 +112,17 @@ Doing 实现CGI
 
 todo 错误输入数据的鲁棒性
 
-todo 长链接keep connection
+todo 长链接keep connection。keep alive的请求和相应方法[参考这里](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Keep-Alive)
 
 todo 处理输入的URL，使其对大小写不敏感
 
 Done 对无对应资源的URL的404处理需要重新安排
+
+todo 日志系统
+
+todo 对每个函数的工作原理的详细描述 - 输入、输出等
+
+todo 单元测试？（很多都是成员函数，这些要怎么测？）
 
 # 可能存在的BUG
 

@@ -24,6 +24,8 @@ public:
     void sendForBidden();
     // 发送404网页给客户机
     void sendNotFound();
+    // 发送内存中的网页给客户机
+    void sendMemoryPage();
     // 关闭和客户端的套截字
     void closePeerConnection();
 
@@ -33,7 +35,7 @@ private:
     // 设置返回文件类型为静态HTML
     void htmlContentType( char [] );
     // 服务器上的静态文件
-    void serversStaticFile( char [] );
+    void serversStaticFile();
 
     const HttpData &httpData;
     int clientSocket;

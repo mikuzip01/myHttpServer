@@ -15,8 +15,8 @@ void Responser::sendStaticFileToClient(){
         char buf [ PAGE_BUFFER_SIZE ];
         okHeader( buf );
         htmlContentType( buf );
-        serversStaticFile( buf );
         send( clientSocket, buf, strlen( buf ), 0 );
+        serversStaticFile();
     }
 }
 
@@ -67,7 +67,7 @@ void Responser::executeCGI(){
         for( const auto &iter : (*postData) ){
             write( cgi_input[ 1 ], iter.first.c_str(), strlen( iter.first.c_str() ) );
             write( cgi_input[ 1 ], " ", 1);
-            write( cgi_input[ 1 ], iter.second.c_str(), strlen( iter.second.c_str() ) );
+            write( cgi_input[ 1 ], iter.second == "" ? NULLINFO.c_str() : iter.second.c_str(), iter.second == "" ? strlen( NULLINFO.c_str() ) : strlen( iter.second.c_str() ) );
             write( cgi_input[ 1 ], "\n", 1);
         }
         write( cgi_input[ 1 ], "EOF\n", 1);
@@ -84,16 +84,16 @@ void Responser::executeCGI(){
     waitpid( pid, &status, 0); // 必须对CGI进程调用waitpid，不然就会产生僵尸进程
 }
 
-void Responser::serversStaticFile( char buf[] ){
+void Responser::serversStaticFile(){
     FILE *resource = NULL;
     resource = fopen( httpData.getUrl().c_str() , "r");  // 以只读方法打开url指定的文件
-    char readBuf [ 256 ];
-    memset( readBuf, 0, 256 );
-    fgets(readBuf, 256, resource);  // 
+    char readBuf [ PAGE_BUFFER_SIZE ];
+    memset( readBuf, 0, PAGE_BUFFER_SIZE );
+    fgets(readBuf, PAGE_BUFFER_SIZE, resource);  // 
     while (!feof(resource))
     {   
-        strcat( buf, readBuf );
-        fgets(readBuf, 256, resource);
+        fgets(readBuf, PAGE_BUFFER_SIZE, resource);
+        send( clientSocket, readBuf, strlen( readBuf ), 0 );
     }
     fclose( resource );
 }
@@ -136,4 +136,12 @@ void Responser::closePeerConnection(){
         close( clientSocket );
         isClose = true;
     }
+}
+
+void Responser::sendMemoryPage(){
+    char buf [ PAGE_BUFFER_SIZE ];
+    okHeader( buf );
+    htmlContentType( buf );
+    sprintf(buf, "%s%s", buf, memory_index_page );
+    send( clientSocket, buf, strlen( buf ), 0 );
 }
