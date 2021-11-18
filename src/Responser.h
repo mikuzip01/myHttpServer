@@ -31,9 +31,17 @@ public:
 
 private:
     // 200 OK 的响应头
-    void okHeader( char [] );
+    void fisrtLine_200( char [] );
+    // 返回接受keep-alive请求
+    void header_keepAlive( char [] );
     // 设置返回文件类型为静态HTML
-    void htmlContentType( char [] );
+    void header_htmlContentType( char [] );
+    // 设置返回文件类型为png
+    void header_pngContentType( char [] );
+    // 设置返回文件的长度
+    void header_contentLength( char [] , size_t);
+    // header和body的分界线
+    void header_body( char [] );
     // 服务器上的静态文件
     void serversStaticFile();
 

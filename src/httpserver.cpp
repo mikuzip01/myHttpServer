@@ -37,10 +37,9 @@ void httpserver( int clientSocketFd ){
     if( !fileExist( httpData.getUrl().c_str() ) && httpData.getUrlResourceType() != "memory" ){ responser.sendNotFound(); return; }
 
     if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
-        if( httpData.getUrlResourceType() == "html") responser.sendStaticFileToClient();
-        else if(httpData.getUrlResourceType() == "cgi") responser.executeCGI();
+        if(httpData.getUrlResourceType() == "cgi") responser.executeCGI();
         else if( httpData.getUrlResourceType() == "memory") responser.sendMemoryPage();
-        else responser.sendNotFound();
+        else responser.sendStaticFileToClient();;
     }
     else if( httpData.getRequestMethod() == HttpData::RequestMethod::POST ){
         if( httpData.getUrlResourceType() == "cgi" ) responser.executeCGI();

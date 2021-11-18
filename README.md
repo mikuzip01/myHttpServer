@@ -24,6 +24,8 @@ Reactor模型
 
 CGI的输出承担的是HTTP协议的响应部分，因此HTTP响应报头也要自己标准输出出来。
 
+在返回非文本文件是，需要用二进制的方向在服务器上打开文件
+
 # 问题
 ## 关闭客户端链接时行为不正常
 
@@ -87,6 +89,19 @@ CGI的输出承担的是HTTP协议的响应部分，因此HTTP响应报头也要
 
 通过环境变量传递参数个数的方式（getenv）代替通过scanf（stdin）
 
+## 客户端接受PNG图像显示不正常
+
+**Q**
+
+如题
+
+**原因**
+
+使用了文本的方式读取的图片文件，导致回传的数据不正确
+
+**解决方案**
+
+使用二进制的方式读取文件即可
 
 # TODO LIST
 
@@ -112,13 +127,15 @@ Doing 实现CGI
 
 todo 错误输入数据的鲁棒性
 
-todo 长链接keep connection。keep alive的请求和相应方法[参考这里](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Keep-Alive)
+todo 长链接keep connection。keep alive的请求和相应方法[参考这里](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Keep-Alive)。改进思路：将关闭clientsocket的任务从Responser中分离出来，由一个专门的计时器来管理
 
 todo 处理输入的URL，使其对大小写不敏感
 
 Done 对无对应资源的URL的404处理需要重新安排
 
 todo 日志系统
+
+Done 能返回二进制文件
 
 todo 对每个函数的工作原理的详细描述 - 输入、输出等
 

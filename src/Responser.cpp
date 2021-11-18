@@ -6,6 +6,7 @@ const int PAGE_BUFFER_SIZE = 2048;
 void Responser::sendStaticFileToClient(){
     struct stat staticFileState;
     int ret = stat( httpData.getUrl().c_str(), &staticFileState );
+    size_t fileSize = staticFileState.st_size;
 
     if( ret == -1 ){  // 没有对应的文件和文件夹或拒绝存取
         if( errno == EACCES ) sendForBidden();
@@ -13,8 +14,15 @@ void Responser::sendStaticFileToClient(){
     }
     else{
         char buf [ PAGE_BUFFER_SIZE ];
-        okHeader( buf );
-        htmlContentType( buf );
+
+        fisrtLine_200( buf );
+        if( httpData.keepConnection() ) header_keepAlive( buf );
+
+        if( httpData.getUrlResourceType() == "png" ) header_pngContentType( buf );
+        else header_htmlContentType( buf );
+        
+        header_contentLength( buf, fileSize );
+        header_body( buf );
         send( clientSocket, buf, strlen( buf ), 0 );
         serversStaticFile();
     }
@@ -27,7 +35,7 @@ Responser::~Responser(){
 void Responser::executeCGI(){
     char buf [ PAGE_BUFFER_SIZE ];
     memset( buf, 0, PAGE_BUFFER_SIZE );
-    okHeader( buf );
+    fisrtLine_200( buf );
     int cgi_output[2]; // 负责CGI进程到父进程的信息传递
     int cgi_input[2]; // 负责父进程到CGI的信息传递
     pid_t pid;
@@ -86,27 +94,56 @@ void Responser::executeCGI(){
 
 void Responser::serversStaticFile(){
     FILE *resource = NULL;
-    resource = fopen( httpData.getUrl().c_str() , "r");  // 以只读方法打开url指定的文件
     char readBuf [ PAGE_BUFFER_SIZE ];
-    memset( readBuf, 0, PAGE_BUFFER_SIZE );
-    fgets(readBuf, PAGE_BUFFER_SIZE, resource);  // 
-    while (!feof(resource))
-    {   
-        fgets(readBuf, PAGE_BUFFER_SIZE, resource);
-        send( clientSocket, readBuf, strlen( readBuf ), 0 );
+    if ( httpData.getUrlResourceType() != "html"){ // 读取二进制文件
+        resource = fopen( httpData.getUrl().c_str() , "rb");
+        int count = 1;
+        while ( true )
+        {
+            count = fread( readBuf, 1, PAGE_BUFFER_SIZE, resource ); // 第一个size_t指的是接受数据的内存区域的每个元素的大小，这里是char[]所以填1；第二个size_t指的有多少个元素
+            if( count == 0 ) break;
+            else send( clientSocket, readBuf, count, 0 );
+        } 
+    }
+    else { // 读取文本文件
+        resource = fopen( httpData.getUrl().c_str() , "r");  // 以只读方法打开url指定的文件
+        memset( readBuf, 0, PAGE_BUFFER_SIZE );
+        fgets(readBuf, PAGE_BUFFER_SIZE, resource);  // 
+        while (!feof(resource))
+        {   
+            fgets(readBuf, PAGE_BUFFER_SIZE, resource);
+            send( clientSocket, readBuf, strlen( readBuf ), 0 );
+        }
     }
     fclose( resource );
 }
 
-void Responser::okHeader( char buf[] ){
+void Responser::fisrtLine_200( char buf[] ){
     sprintf(buf, "HTTP/1.0 200 OK\r\n" );
     sprintf(buf, "%s%s", buf, SERVER_NAME );
     
 }
 
-void Responser::htmlContentType( char buf[] ){
+void Responser::header_htmlContentType( char buf[] ){
     sprintf(buf, "%s%s", buf, "Content-Type: text/html\r\n" );
+    
+}
+
+void Responser::header_pngContentType( char buf[] ){
+    sprintf(buf, "%s%s", buf, "Content-Type: image/png\r\n" );
+}
+
+void Responser::header_body( char buf[] ){
     sprintf(buf, "%s%s", buf, "\r\n" );  // 和page body的分界线
+}
+
+void Responser::header_keepAlive( char buf[] ){
+    sprintf( buf, "%s%s", buf, "Connection: Keep-Alive\r\n" );
+    sprintf( buf, "%s%s", buf, "Keep-Alive: \r\n" ); // rfc2068标准说http1.1的keep alive header默认没有参数
+}
+
+void Responser::header_contentLength( char buf[], size_t fileSize ){
+    sprintf( buf, "%s%s%d%s", buf, "Content-Length: ", fileSize, "\r\n" );
 }
 
 void Responser::sendNotFound(){
@@ -140,8 +177,8 @@ void Responser::closePeerConnection(){
 
 void Responser::sendMemoryPage(){
     char buf [ PAGE_BUFFER_SIZE ];
-    okHeader( buf );
-    htmlContentType( buf );
+    fisrtLine_200( buf );
+    header_htmlContentType( buf );
     sprintf(buf, "%s%s", buf, memory_index_page );
     send( clientSocket, buf, strlen( buf ), 0 );
 }

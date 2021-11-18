@@ -38,6 +38,7 @@ public:
     int getContentLength() const { return contentLength ? numeralContentLength() : 0; }
     int getClientSocket() const { return clientSocket; }
     const shared_ptr< std::unordered_map< string, string > > getPostBodyData() const { return clientParamData; }
+    bool keepConnection() const { return m_keepConnection; }
 
 private:
     // 根据CRLF标志符，将套接字中的数据分行取出。读取成功的最后\r\n会被替换成\0
@@ -76,6 +77,7 @@ private:
     string requestMethod_string, url, urlResourceType, version;
     shared_ptr<string> host, userAgent, accept, acceptLanguage, acceptEncoding, connection, upgradeInsecurceRequests, contentType, contentLength; // 弄成堆上对象，因为有可能为空。用智能指针来管理
     shared_ptr< std::unordered_map< string, string > > clientParamData;  // 利用哈希表保存post/get中的键值对
+    bool m_keepConnection;
 };
 
 #endif

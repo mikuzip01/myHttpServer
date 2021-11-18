@@ -3,7 +3,8 @@
 const string NULLINFO("NULL");
 
 
-HttpData::HttpData(int clientSocket) : prev( 0 ), clientSocket( clientSocket ), readIndex( HTTPDATA_BUFFERSIZE ), dataEndIndex( HTTPDATA_BUFFERSIZE - 1 ){
+HttpData::HttpData(int clientSocket) : prev( 0 ), clientSocket( clientSocket ), readIndex( HTTPDATA_BUFFERSIZE ), dataEndIndex( HTTPDATA_BUFFERSIZE - 1 ),
+                                        m_keepConnection(false){
     memset( dataBuffer, 0, HTTPDATA_BUFFERSIZE);
 }
 
@@ -43,7 +44,10 @@ void HttpData::parseHeader(){
         else if( headName == "User-Agent" ) userAgent = std::make_shared< string >( std::move( line ) );
         else if( headName == "Accept" ) accept = std::make_shared< string >( std::move( line ) );
         else if( headName == "Accept-Language" ) acceptLanguage = std::make_shared< string >( std::move( line ) );
-        else if( headName == "Connection" ) connection = std::make_shared< string >( std::move( line ) );
+        else if( headName == "Connection" ){
+            connection = std::make_shared< string >( std::move( line ) );
+            if( (*connection).size() >= 13 && (*connection).substr(12) == "keep-alive" ) m_keepConnection = true;
+            }
         else if( headName == "Upgrade-Insecure-Requests" ) upgradeInsecurceRequests = std::make_shared< string >( std::move( line ) );
         else if( headName == "Content-Type" ) contentType = std::make_shared< string >( std::move( line ) );
         else if( headName == "Content-Length" ) contentLength = std::make_shared< string >( std::move( line ) );
