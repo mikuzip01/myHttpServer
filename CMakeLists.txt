@@ -12,6 +12,7 @@ set(HttpServer_SOURCE_FILES
         src/HttpData.cpp
         src/Responser.cpp
         src/Pages.cpp
+        src/Timer.cpp
         )
 # add_executable(httpServer src/httpserver.cpp)
 add_executable(httpServer ${HttpServer_SOURCE_FILES})

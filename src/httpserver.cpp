@@ -13,26 +13,56 @@
 #include <vector>
 #include <exception>
 #include <unistd.h>
+#include <signal.h>
 #include "ThreadPool.h"
 #include "utils.h"
 #include "HttpData.h"
 #include "Responser.h"
+#include "Timer.h"
 
 
 using std::string; using std::exception; using std::runtime_error;
 using std::cout; using std::endl;
 
 const int BUFFERSIZE = 1024;
+// 长链接的超时事件，单位秒钟，默认15秒，调试阶段设置为5秒
+const int TIMEOUT = 15;
+
+// 统一信号源的管道
+static int pipeline[2];
 
 
-void httpserver( int clientSocketFd ){
+// 信号处理句柄
+void signalHandler( int sig ){
+    int saveErrno = errno;
+    int msg = sig;
+    write( pipeline[ 1 ], reinterpret_cast<char*>( &msg ), 1 ); // fixme 
+    errno = saveErrno;
+}
+
+// 设置句柄
+void addSingal( int sig ){
+    struct sigaction sa;
+    memset( &sa, 0, sizeof( sa ) );
+    sa.sa_handler = signalHandler;
+    sa.sa_flags |= SA_RESTART; // ??????这个是做什么的
+    sigfillset( &sa.sa_mask ); // 利用sigfillset函数初始化sa_mask，设置所有的信号
+    sigaction( sig, &sa, nullptr );
+}
+
+
+void httpserver( TaskData taskData ){
+    int clientSocketFd = taskData.clientfd;
     HttpData httpData( clientSocketFd );
     httpData.parseData();
+    // 一旦被标记为badRequest或者UNSUPPORT，那么httpData中的大部分数据都将不会生成。因此在要继续访问httpData前需要进行一次检查
+    if( httpData.badRequest() ) { printf("bad request\n"); return; }
+    if( httpData.getRequestMethod() == HttpData::UNSUPPORT ) { printf("unsupport method\n"); return; }
 
     Responser responser( httpData );
 
     printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
-    printf("%s\n", httpData.getUserAgent().c_str() );
+    // printf("%s\n", httpData.getUserAgent().c_str() );
 
     if( !fileExist( httpData.getUrl().c_str() ) && httpData.getUrlResourceType() != "memory" ){ responser.sendNotFound(); return; }
 
@@ -45,15 +75,17 @@ void httpserver( int clientSocketFd ){
         if( httpData.getUrlResourceType() == "cgi" ) responser.executeCGI();
         else responser.sendNotFound();
     }
+    
+    // 设置长连接
+    if( httpData.keepConnection() ){
+        taskData.timer->addfd( clientSocketFd );
+    }
+    else{
+        close( clientSocketFd );
+    }
+
 }
 
-
-int setFdNonblock( int fd ){
-    int old_options = fcntl( fd, F_GETFL );
-    int new_options = old_options | O_NONBLOCK;
-    fcntl( fd, F_SETFL, new_options );
-    return old_options;
-}
 
 int main(){ 
 
@@ -61,11 +93,11 @@ int main(){
     int port = 12345;
 
 
-    int socketfd = socket( AF_INET, SOCK_STREAM, 0 );
-    if( socketfd == -1 ) throw runtime_error("socket create failed\n");
+    int serverSocketfd = socket( AF_INET, SOCK_STREAM, 0 );
+    if( serverSocketfd == -1 ) throw runtime_error("socket create failed\n");
     printf("socket create success\n");
     
-    setPortReuse( socketfd );
+    setPortReuse( serverSocketfd );
 
     struct sockaddr_in ipaddr;
     ipaddr.sin_family = AF_INET;
@@ -73,26 +105,25 @@ int main(){
     ipaddr.sin_addr.s_addr = inet_addr( ip.c_str() );  
 
 
-    int ret = bind( socketfd, reinterpret_cast< struct sockaddr*>( &ipaddr ), sizeof( ipaddr ) );
+    int ret = bind( serverSocketfd, reinterpret_cast< struct sockaddr*>( &ipaddr ), sizeof( ipaddr ) );
     if( ret == -1 ) throw runtime_error("bind ipaddr failed\n");
     printf("bind ipaddr create success\n");
 
-    ret = listen( socketfd, 20 );
+    ret = listen( serverSocketfd, 20 );
     if( ret == -1 ) throw runtime_error("call listen failed\n");
     printf("listen create success\n");
+
+    ret = pipe( pipeline );
+    if( ret == -1 ) throw runtime_error("pipeline create failed\n");
+    printf("pipeline create success\n");
 
     struct sockaddr_in clientaddr;
     socklen_t clientaddrLength = sizeof( clientaddr );
 
-    // int clientsocketfd = accept( socketfd, reinterpret_cast< struct sockaddr*> ( &clientaddr ), &clientaddrLength);
 
     int epollFd = epoll_create(5);
-    struct epoll_event socketEvent;
-    memset( &socketEvent, 0, sizeof( socketEvent ) );
-    setFdNonblock( socketfd );
-    socketEvent.data.fd = socketfd;
-    socketEvent.events = ( EPOLLIN | EPOLLET ); // 边缘触发模式
-    epoll_ctl( epollFd, EPOLL_CTL_ADD, socketfd, &socketEvent); // socketfd在epoll_event需要设置在epoll_ctl()函数中也需要设置？
+    addFdToEpoll_INET( epollFd, serverSocketfd );
+    addFdToEpoll_INLT( epollFd, pipeline[ 0 ] );
 
     struct epoll_event epollEvents[5];
     ThreadPool threadPool(httpserver);
@@ -100,16 +131,43 @@ int main(){
 
     loadIndexTomemory("www/index.html");
     printf("load index page to memory success\n");
+
+    addSingal( SIGALRM );
+    setFdNonblock( pipeline[ 1 ] );
+    alarm( 1 ); // 一秒后触发一次定时。单次有效，不会循环触发
+    Timer timer( epollFd, TIMEOUT ); // 定义管理长链接的定时器类
+    char signals[ 128 ];
     
     while(true){
         ret = epoll_wait( epollFd, epollEvents, 5, -1 );
         for( int i = 0; i < ret; ++i ){
-            if ( epollEvents[i].data.fd == socketfd ) {
-                int clientSocketFd = accept( socketfd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength );
+            if ( epollEvents[i].data.fd == serverSocketfd ) {
+                int clientSocketFd = accept( serverSocketfd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength );
                 printf("\n");
                 dispAddrInfo( clientaddr );
-                threadPool.appendFd( clientSocketFd );
+                threadPool.appendFd( TaskData( clientSocketFd, &timer ) );
                 threadPool.notifyOneThread();
+            }
+            else if( epollEvents[i].data.fd != pipeline[ 0 ] ){ // 再一次被激活的长链接
+                printf("\n");
+                printf("reused connection:\n");
+                dispPeerConnection( epollEvents[i].data.fd );
+                threadPool.appendFd( TaskData( epollEvents[i].data.fd, &timer ) );
+                threadPool.notifyOneThread();
+            }
+            else{ // 收到时间信号
+                int sigNums = read( pipeline[ 0 ], signals, 128 );
+                for( int i = 0; i < sigNums; ++i ){
+                    if( signals[ i ] == SIGALRM ){
+                        // 执行定时器
+                        timer.checkfd();
+                        alarm( 1 );
+                    }
+                    else{
+                        continue;
+                    }
+                }
+                
             }
         }
     }

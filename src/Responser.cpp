@@ -29,7 +29,7 @@ void Responser::sendStaticFileToClient(){
 }
 
 Responser::~Responser(){
-    closePeerConnection();
+    // closePeerConnection();
 }
 
 void Responser::executeCGI(){
@@ -119,7 +119,7 @@ void Responser::serversStaticFile(){
 }
 
 void Responser::fisrtLine_200( char buf[] ){
-    sprintf(buf, "HTTP/1.0 200 OK\r\n" );
+    sprintf(buf, "HTTP/1.1 200 OK\r\n" );
     sprintf(buf, "%s%s", buf, SERVER_NAME );
     
 }
@@ -138,7 +138,7 @@ void Responser::header_body( char buf[] ){
 }
 
 void Responser::header_keepAlive( char buf[] ){
-    sprintf( buf, "%s%s", buf, "Connection: Keep-Alive\r\n" );
+    sprintf( buf, "%s%s", buf, "Connection: keep-alive\r\n" );
     sprintf( buf, "%s%s", buf, "Keep-Alive: \r\n" ); // rfc2068标准说http1.1的keep alive header默认没有参数
 }
 
@@ -148,7 +148,7 @@ void Responser::header_contentLength( char buf[], size_t fileSize ){
 
 void Responser::sendNotFound(){
     char buf[1024];
-    sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n" );
+    sprintf(buf, "HTTP/1.1 404 NOT FOUND\r\n" );
     sprintf(buf, "%s%s", buf, SERVER_NAME );
     sprintf(buf, "%s%s", buf, "Content-Type: text/html\r\n" );
     sprintf(buf, "%s%s", buf, "\r\n" );
@@ -159,7 +159,7 @@ void Responser::sendNotFound(){
 
 void Responser::sendForBidden(){
     char buf[1024];
-    sprintf(buf, "HTTP/1.0 403 Forbidden\r\n" );
+    sprintf(buf, "HTTP/1.1 403 Forbidden\r\n" );
     sprintf(buf, "%s%s", buf, SERVER_NAME );
     sprintf(buf, "%s%s", buf, "Content-Type: text/html\r\n" );
     sprintf(buf, "%s%s", buf, "\r\n" );

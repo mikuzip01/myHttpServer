@@ -4,12 +4,13 @@ const string NULLINFO("NULL");
 
 
 HttpData::HttpData(int clientSocket) : prev( 0 ), clientSocket( clientSocket ), readIndex( HTTPDATA_BUFFERSIZE ), dataEndIndex( HTTPDATA_BUFFERSIZE - 1 ),
-                                        m_keepConnection(false){
+                                        m_keepConnection(false), m_badRequest( false ), requestMethod( UNSUPPORT ) {
     memset( dataBuffer, 0, HTTPDATA_BUFFERSIZE);
 }
 
 void HttpData::parseData(){
     parseStartLine();
+    if( m_badRequest || requestMethod == UNSUPPORT ) return;
     parseHeader();
     if( requestMethod == POST ) parseBodyParamData();
 }
@@ -19,6 +20,9 @@ void HttpData::parseStartLine(){
     vector<string> headerInfo;
     stringSplit( firstLine, headerInfo, " " );
     getRequestMethod( headerInfo );
+    // 如果请求无法识别就不进行后续的url处理，即一旦被标记为badRequest或者UNSUPPORT，那么httpData中的大部分数据都将不会生成。因此在要继续访问httpData前需要进行一次检查
+    if( m_badRequest || requestMethod == UNSUPPORT ) return;
+
     url = headerInfo[ 1 ];
     if( url == "/" ) url = "/index.html";
 
@@ -65,9 +69,7 @@ string HttpData::parseOneLine(){
     if( dataBufferEmpty() ) readRawDataFromSocket();
     char lineBuffer[ LINE_BUFFERSIZE ];
     int index = 0;
-    while( readIndex <= dataEndIndex ){
-        // if( index >= bufferSize ){ printf("buffer overflow!"); throw std::exception(); }
-        
+    while( readIndex <= dataEndIndex ){     
         lineBuffer[ index ]= dataBuffer[ readIndex ];
         ++index;
         ++readIndex;
@@ -101,6 +103,12 @@ void HttpData::stringSplit(const string& s, vector<string>& tokens, const string
 }
 
 void HttpData::getRequestMethod( const vector<string>& headerInfo ){
+    if( headerInfo.size() == 0 ){ // 应对空请求
+        requestMethod = RequestMethod::UNSUPPORT; requestMethod_string = "UNSUPPORT";
+        m_badRequest = true;
+        return;
+    }
+
     if( headerInfo[0] == "GET" ) { requestMethod = RequestMethod::GET; requestMethod_string = "GET"; }
     else if( headerInfo[0] == "POST" ) { requestMethod = RequestMethod::POST; requestMethod_string = "POST"; }
     else { requestMethod = RequestMethod::UNSUPPORT; requestMethod_string = "UNSUPPORT"; }
