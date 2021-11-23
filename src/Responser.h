@@ -44,6 +44,8 @@ private:
     void header_body( char [] );
     // 服务器上的静态文件
     void serversStaticFile();
+    // 计算server部分输入CGI的字符长度，方便实现长链接
+    int cgiContentLength();
 
     const HttpData &httpData;
     int clientSocket;

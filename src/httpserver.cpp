@@ -149,6 +149,7 @@ int main(){
                 threadPool.notifyOneThread();
             }
             else if( epollEvents[i].data.fd != pipeline[ 0 ] ){ // 再一次被激活的长链接
+                timer.deleteFd( epollEvents[i].data.fd ); // 防止复用的链接在较长时间的处理过程中（例如传大文件）时被定时器给关闭
                 printf("\n");
                 printf("reused connection:\n");
                 dispPeerConnection( epollEvents[i].data.fd );
@@ -160,7 +161,7 @@ int main(){
                 for( int i = 0; i < sigNums; ++i ){
                     if( signals[ i ] == SIGALRM ){
                         // 执行定时器
-                        timer.checkfd();
+                        timer.deleteExpiredFd();
                         alarm( 1 );
                     }
                     else{

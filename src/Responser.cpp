@@ -33,6 +33,11 @@ Responser::~Responser(){
 }
 
 void Responser::executeCGI(){
+    if( httpData.getParamCount() == 0 ){ // 非空处理, 发现非法直接就不执行
+        sendForBidden();
+        return;
+    }
+
     char buf [ PAGE_BUFFER_SIZE ];
     memset( buf, 0, PAGE_BUFFER_SIZE );
     fisrtLine_200( buf );
@@ -57,10 +62,11 @@ void Responser::executeCGI(){
         // 将标准输出(printf)接到输出管道的写端
         dup2( cgi_output[ 1 ], 1);
         // 统计POST数据的数量作为环境变量输入CGI程序
-        size_t dataCount = (*httpData.getPostBodyData()).size();
-        char env_dataCount[256];
-        sprintf( env_dataCount, "DATACOUNT=%d", dataCount);
-        putenv(env_dataCount);
+        size_t dataCount = (*httpData.getClientParamData()).size();
+        char env_str[256];
+        // cgiContentLength()直接计算最后的长度，目前没有扩扩展性
+        sprintf( env_str, "CGIDATA=%d %d", dataCount, cgiContentLength() ); // 数据的数目，输入字符的长度
+        putenv(env_str);
         // 执行CGI程序
         execl( httpData.getUrl().c_str() , httpData.getUrl().c_str(), NULL);
         // CGI进程关闭时就自动的调用了close关闭了还打开的所有的文件描述符
@@ -71,14 +77,14 @@ void Responser::executeCGI(){
         close( cgi_output[ 1 ] );  // !!!
         // 父进程中需要关闭管道的读端
         close( cgi_input[ 0 ] );
-        const auto postData = httpData.getPostBodyData();
+        const auto postData = httpData.getClientParamData();
         for( const auto &iter : (*postData) ){
             write( cgi_input[ 1 ], iter.first.c_str(), strlen( iter.first.c_str() ) );
             write( cgi_input[ 1 ], " ", 1);
             write( cgi_input[ 1 ], iter.second == "" ? NULLINFO.c_str() : iter.second.c_str(), iter.second == "" ? strlen( NULLINFO.c_str() ) : strlen( iter.second.c_str() ) );
             write( cgi_input[ 1 ], "\n", 1);
         }
-        write( cgi_input[ 1 ], "EOF\n", 1);
+        // write( cgi_input[ 1 ], "EOF\n", 1);
         int ret;
         while (true)
         {
@@ -181,4 +187,13 @@ void Responser::sendMemoryPage(){
     header_htmlContentType( buf );
     sprintf(buf, "%s%s", buf, memory_index_page );
     send( clientSocket, buf, strlen( buf ), 0 );
+}
+
+int Responser::cgiContentLength(){
+    int ans = 0;
+    for( auto& iter : *(httpData.getClientParamData() ) ){
+        ans += iter.first.size();
+        ans += iter.second == "" ? NULLINFO.size() : iter.second.size();
+    }
+    return ans;
 }

@@ -36,8 +36,9 @@ public:
     const string& getUserAgent() const { return userAgent ? *userAgent : NULLINFO; }
     const string& getUrlResourceType() const { return urlResourceType; }
     int getContentLength() const { return contentLength ? numeralContentLength() : 0; }
+    int getParamCount() const { return clientParamData ? (*clientParamData).size() : 0; }
     int getClientSocket() const { return clientSocket; }
-    const shared_ptr< std::unordered_map< string, string > > getPostBodyData() const { return clientParamData; }
+    const shared_ptr< std::unordered_map< string, string > > getClientParamData() const { return clientParamData; }
     bool keepConnection() const { return m_keepConnection; }
     bool badRequest() const { return m_badRequest; }
 

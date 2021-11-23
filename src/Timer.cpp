@@ -16,7 +16,7 @@ void Timer::Node::setExpireTime( int _timeout ){
 }
 
 
-bool Timer::addfd( int clientFd ){ // fixme 还没有为多线程增加临界区
+bool Timer::addfd( int clientFd ){
     {
         MutexLockGuard mutexLockGuard( mutex );
         if( curSize >= maxSize ) return false;
@@ -39,8 +39,8 @@ bool Timer::addfd( int clientFd ){ // fixme 还没有为多线程增加临界区
     }
 }
 
-// fixme 还没有为多线程增加临界区
-void Timer::checkfd(){ // 删除过期的链接
+
+void Timer::deleteExpiredFd(){ // 删除过期的链接
     {
         MutexLockGuard mutexLockGuard( mutex );
         Node::TimeVal curtime;
@@ -52,6 +52,22 @@ void Timer::checkfd(){ // 删除过期的链接
             dispPeerConnection( timeList.front().clientFd() );
             close( timeList.front().clientFd() );
             timeList.pop_front();
+            --curSize;
+        }
+    }
+}
+
+void Timer::deleteFd( int clientFd ){
+    {
+        MutexLockGuard mutexLockGuard( mutex );
+        if( hashMap.find( clientFd ) == hashMap.end() ){ // clientfd本来就没有在计时器中
+            // 什么都不做
+        }
+        else{
+            printf("\nTimer - delete client keep alive:");
+            dispPeerConnection( clientFd );
+            timeList.erase( hashMap[ clientFd ] );
+            hashMap.erase( clientFd );
             --curSize;
         }
     }

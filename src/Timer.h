@@ -14,7 +14,9 @@ public:
     // 添加需要长链接的客户端，添加成功返回true，失败返回false
     bool addfd( int clientFd );
     // 检查处理过期的客户端连接
-    void checkfd();
+    void deleteExpiredFd();
+    // 删除指定的文件描述符
+    void deleteFd( int clientFd );
 
 private:
     // 用于保存每一个需要长链接的套接字的文件描述符，加入时间以及过期的时间

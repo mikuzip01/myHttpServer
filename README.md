@@ -36,6 +36,8 @@ pipeline[ 1 ]不设置为非阻塞，那管道一旦被写满，主线程就会�
 
 定时器不正常工作的原因竟然时过期事件和当前事件的判断条件写反了-----
 
+putenv()这个函数不能多次调用，至设设定一个的时候没有任何问题，CGI程序可以正常的接受，但设置第二个环境变量时似乎会把之前的设置给破坏，反正就是看似设置了两个环境变量但实际上并不是这样
+
 # 问题
 ## 关闭客户端链接时行为不正常
 
@@ -162,7 +164,7 @@ Doing 实现CGI
 
 todo 错误输入数据的鲁棒性
 
-todo 长链接keep connection。keep alive的请求和相应方法[参考这里](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Keep-Alive)。改进思路：将关闭clientsocket的任务从Responser中分离出来，由一个专门的计时器来管理
+Done 长链接keep connection。keep alive的请求和相应方法[参考这里](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Keep-Alive)。改进思路：将关闭clientsocket的任务从Responser中分离出来，由一个专门的计时器来管理
 
 todo 处理输入的URL，使其对大小写不敏感
 
@@ -174,11 +176,30 @@ Done 能返回二进制文件
 
 todo 根据请求的HTTP版本（1.0或者1.1），调整返回的请求头的协议版本，而不是固定的1.0或者1.1
 
+Done CGI模块也要能设置Content Length，不然无法配合长链接使用
+
 todo 对每个函数的工作原理的详细描述 - 输入、输出等
 
 todo 单元测试？（很多都是成员函数，这些要怎么测？）
+
+todo benchmark - [webbench](https://github.com/linyacool/WebBench)
+
+todo 利用工具对程序进行性能分析
+
+todo 把bookmark换一下，里面有些信息应该不好过审
+
+# Benchark
+
+## 单线程
+
+index.html网页( 有磁盘I/O影响 )
+
+./bin/webbench -t 60 -c 1000 -2 --get -k http://127.0.0.1:12345/index.html
+
+
 
 # 可能存在的BUG
 
 fixme 在解析http数据判断换行时，固定的是CRLF，有没有可能出现只用LF进行换行的情况？
 
+Done 在复用链接的情况下，超过15还没有传输完的时候，会被计时器给关闭掉链接
