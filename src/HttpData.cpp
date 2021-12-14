@@ -86,6 +86,7 @@ string HttpData::parseOneLine(){
 void HttpData::readRawDataFromSocket(){
     int dataNum = recv( clientSocket, dataBuffer, HTTPDATA_BUFFERSIZE, 0);
     if( dataNum < 0 ) throw std::runtime_error("recv error!\n");
+    if( dataNum == 0 ) throw SocketClosed();
     readIndex = 0;
     dataEndIndex = dataNum - 1;
 }

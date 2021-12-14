@@ -15,18 +15,22 @@ void setPortReuse( int socketfd ){
 
 void sendHello( int sockedfd ){
     char buf[128];
-
+    int ret = 0;
     sprintf(buf, "HTTP/1.1 200 OK\r\n");
-    send(sockedfd, buf, strlen(buf), 0);
+    ret = send(sockedfd, buf, strlen(buf), MSG_NOSIGNAL );
+    if( ret == -1 ) throw SocketClosed();
 
     sprintf(buf, "Content-type: text/html\r\n");
-    send(sockedfd, buf, strlen(buf), 0);
+    ret = send(sockedfd, buf, strlen(buf), 0);
+    if( ret == -1 ) throw SocketClosed();
 
     sprintf(buf, "\r\n");
-    send(sockedfd, buf, strlen(buf), 0);
+    ret = send(sockedfd, buf, strlen(buf), 0);
+    if( ret == -1 ) throw SocketClosed();
 
     sprintf(buf, "<P>Hello!\r\n");
-    send(sockedfd, buf, strlen(buf), 0);
+    ret = send(sockedfd, buf, strlen(buf), 0);
+    if( ret == -1 ) throw SocketClosed();
 
     // sleep(1);
     printf("send hello finish!\n");

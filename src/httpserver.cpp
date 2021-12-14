@@ -19,6 +19,7 @@
 #include "HttpData.h"
 #include "Responser.h"
 #include "Timer.h"
+#include "Error.h"
 
 
 using std::string; using std::exception; using std::runtime_error;
@@ -53,36 +54,53 @@ void addSingal( int sig ){
 
 void httpserver( TaskData taskData ){
     int clientSocketFd = taskData.clientfd;
-    HttpData httpData( clientSocketFd );
-    httpData.parseData();
-    // 一旦被标记为badRequest或者UNSUPPORT，那么httpData中的大部分数据都将不会生成。因此在要继续访问httpData前需要进行一次检查
-    if( httpData.badRequest() ) { printf("bad request\n"); return; }
-    if( httpData.getRequestMethod() == HttpData::UNSUPPORT ) { printf("unsupport method\n"); return; }
+    try{
+        HttpData httpData( clientSocketFd );
+        httpData.parseData();
+        // 一旦被标记为badRequest或者UNSUPPORT，那么httpData中的大部分数据都将不会生成。因此在要继续访问httpData前需要进行一次检查
+        if( httpData.badRequest() ) { 
+            #ifdef __PRINT_INFO_TO_DISP__
+            printf("bad request\n"); 
+            #endif
+            return; }
+        if( httpData.getRequestMethod() == HttpData::UNSUPPORT ) { 
+            #ifdef __PRINT_INFO_TO_DISP__
+            printf("unsupport method\n"); 
+            #endif
+            return; }
 
-    Responser responser( httpData );
+        Responser responser( httpData );
 
-    printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
-    // printf("%s\n", httpData.getUserAgent().c_str() );
+        #ifdef __PRINT_INFO_TO_DISP__
+        printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
+        #endif
+        // printf("%s\n", httpData.getUserAgent().c_str() );
 
-    if( !fileExist( httpData.getUrl().c_str() ) && httpData.getUrlResourceType() != "memory" ){ responser.sendNotFound(); return; }
+        if( !fileExist( httpData.getUrl().c_str() ) && httpData.getUrlResourceType() != "memory" ){ responser.sendNotFound(); return; }
 
-    if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
-        if(httpData.getUrlResourceType() == "cgi") responser.executeCGI();
-        else if( httpData.getUrlResourceType() == "memory") responser.sendMemoryPage();
-        else responser.sendStaticFileToClient();;
+        if( httpData.getRequestMethod() == HttpData::RequestMethod::GET ){
+            if(httpData.getUrlResourceType() == "cgi") responser.executeCGI();
+            else if( httpData.getUrlResourceType() == "memory") responser.sendMemoryPage();
+            else responser.sendStaticFileToClient();;
+        }
+        else if( httpData.getRequestMethod() == HttpData::RequestMethod::POST ){
+            if( httpData.getUrlResourceType() == "cgi" ) responser.executeCGI();
+            else responser.sendNotFound();
+        }
+        
+        // 设置长连接
+        if( httpData.keepConnection() ){
+            taskData.timer->addfd( clientSocketFd );
+        }
+        else{
+            close( clientSocketFd );
+        }
     }
-    else if( httpData.getRequestMethod() == HttpData::RequestMethod::POST ){
-        if( httpData.getUrlResourceType() == "cgi" ) responser.executeCGI();
-        else responser.sendNotFound();
-    }
-    
-    // 设置长连接
-    if( httpData.keepConnection() ){
-        taskData.timer->addfd( clientSocketFd );
-    }
-    else{
+    catch( exception &e ){
+        taskData.timer->deleteFd( clientSocketFd );
         close( clientSocketFd );
     }
+
 
 }
 
@@ -142,17 +160,24 @@ int main(){
         ret = epoll_wait( epollFd, epollEvents, 5, -1 );
         for( int i = 0; i < ret; ++i ){
             if ( epollEvents[i].data.fd == serverSocketfd ) {
-                int clientSocketFd = accept( serverSocketfd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength );
-                printf("\n");
-                dispAddrInfo( clientaddr );
-                threadPool.appendFd( TaskData( clientSocketFd, &timer ) );
-                threadPool.notifyOneThread();
+                int clientSocketFd = -1;
+                while( (clientSocketFd = accept( serverSocketfd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength ) ) != -1 )
+                {
+                    #ifdef __PRINT_INFO_TO_DISP__ 
+                    printf("\n");
+                    dispAddrInfo( clientaddr );
+                    #endif
+                    threadPool.appendFd( TaskData( clientSocketFd, &timer ) );
+                    threadPool.notifyOneThread();
+                }
             }
             else if( epollEvents[i].data.fd != pipeline[ 0 ] ){ // 再一次被激活的长链接
                 timer.deleteFd( epollEvents[i].data.fd ); // 防止复用的链接在较长时间的处理过程中（例如传大文件）时被定时器给关闭
+                #ifdef __PRINT_INFO_TO_DISP__
                 printf("\n");
                 printf("reused connection:\n");
                 dispPeerConnection( epollEvents[i].data.fd );
+                #endif
                 threadPool.appendFd( TaskData( epollEvents[i].data.fd, &timer ) );
                 threadPool.notifyOneThread();
             }

@@ -10,6 +10,7 @@
 #include <utility>
 #include <memory>
 #include <unordered_map>
+#include "Error.h"
 
 using std::string; using std::vector;
 using std::shared_ptr;

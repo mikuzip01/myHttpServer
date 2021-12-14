@@ -23,7 +23,8 @@ void Responser::sendStaticFileToClient(){
         
         header_contentLength( buf, fileSize );
         header_body( buf );
-        send( clientSocket, buf, strlen( buf ), 0 );
+        ret = send( clientSocket, buf, strlen( buf ), MSG_NOSIGNAL );
+        if( ret == -1 ) throw SocketClosed();
         serversStaticFile();
     }
 }
@@ -92,8 +93,8 @@ void Responser::executeCGI(){
             if( ret == -1 ) throw std::runtime_error("read() failed");
             if( ret == 0 ) break;
         }
-        ret = send( clientSocket, buf, strlen( buf ), 0 );
-        if( ret == -1 ) throw std::runtime_error("send() failed");
+        ret = send( clientSocket, buf, strlen( buf ), MSG_NOSIGNAL );
+        if( ret == -1 ) throw SocketClosed();
     }
     waitpid( pid, &status, 0); // 必须对CGI进程调用waitpid，不然就会产生僵尸进程
 }
@@ -108,7 +109,10 @@ void Responser::serversStaticFile(){
         {
             count = fread( readBuf, 1, PAGE_BUFFER_SIZE, resource ); // 第一个size_t指的是接受数据的内存区域的每个元素的大小，这里是char[]所以填1；第二个size_t指的有多少个元素
             if( count == 0 ) break;
-            else send( clientSocket, readBuf, count, 0 );
+            else{
+                int ret = send( clientSocket, readBuf, count, MSG_NOSIGNAL );
+                if( ret == -1 ) throw SocketClosed();
+            }
         } 
     }
     else { // 读取文本文件
@@ -118,7 +122,8 @@ void Responser::serversStaticFile(){
         while (!feof(resource))
         {   
             fgets(readBuf, PAGE_BUFFER_SIZE, resource);
-            send( clientSocket, readBuf, strlen( readBuf ), 0 );
+            int ret = send( clientSocket, readBuf, strlen( readBuf ), MSG_NOSIGNAL );
+            if( ret == -1 ) throw SocketClosed();
         }
     }
     fclose( resource );
@@ -160,7 +165,7 @@ void Responser::sendNotFound(){
     sprintf(buf, "%s%s", buf, "\r\n" );
     sprintf(buf, "%s%s", buf, NOT_FOUND_PAGE );
     int ret = send( clientSocket, buf, strlen( buf ), 0 );
-    if( ret == -1 ) throw std::runtime_error("send page to client error!\n");
+    if( ret == -1 ) throw SocketClosed();
 }
 
 void Responser::sendForBidden(){

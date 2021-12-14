@@ -5,6 +5,8 @@ include(CTest)
 enable_testing()
 find_package(Threads)
 
+# add_definitions(-D__PRINT_INFO_TO_DISP__)
+
 set(HttpServer_SOURCE_FILES
         src/httpserver.cpp
         src/ThreadPool.cpp
@@ -13,6 +15,7 @@ set(HttpServer_SOURCE_FILES
         src/Responser.cpp
         src/Pages.cpp
         src/Timer.cpp
+        src/Error.h
         )
 # add_executable(httpServer src/httpserver.cpp)
 add_executable(httpServer ${HttpServer_SOURCE_FILES})

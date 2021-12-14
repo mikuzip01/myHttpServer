@@ -11,6 +11,7 @@
 #include <string>
 #include <sys/epoll.h>
 #include <sys/fcntl.h>
+#include "Error.h"
 
 extern char *memory_index_page;
 

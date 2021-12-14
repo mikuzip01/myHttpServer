@@ -39,6 +39,8 @@ public:
     }
 
 private:
+    // 标志线程池正在运行，设定为false之后池中的所有线程就退出事件循环
+    bool running;
     int threadNum;
     int maxWorkListLen;
     std::list< TaskData > workList;  // 用于接受来自主线程已经接受的socketfd

@@ -26,14 +26,18 @@ bool Timer::addfd( int clientFd ){
             ++curSize;
             // 同时也要插入主线程的epoll中
             addFdToEpoll_INET( epollFd, clientFd );
+            #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - add client to keep alive:");
             dispPeerConnection( clientFd );
+            #endif
         }
         else{ // 该文件描述符还没有过期且又再次发起了访问
             timeList.erase( hashMap[ clientFd ] );
             hashMap[ clientFd ] = timeList.insert( timeList.end(), Node( clientFd, timeout ) );
+            #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - flash client keep alive:");
             dispPeerConnection( clientFd );
+            #endif
         }
         return true;
     }
@@ -48,8 +52,10 @@ void Timer::deleteExpiredFd(){ // 删除过期的链接
         while( curSize != 0 && curtime.tv_sec > timeList.front().expireTime().tv_sec ){
             hashMap.erase( timeList.front().clientFd() );
             deleteFdFromEpoll( epollFd, timeList.front().clientFd() );
+            #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - delete expire keep alive:");
             dispPeerConnection( timeList.front().clientFd() );
+            #endif
             close( timeList.front().clientFd() );
             timeList.pop_front();
             --curSize;
@@ -64,8 +70,10 @@ void Timer::deleteFd( int clientFd ){
             // 什么都不做
         }
         else{
+            #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - delete client keep alive:");
             dispPeerConnection( clientFd );
+            #endif
             timeList.erase( hashMap[ clientFd ] );
             hashMap.erase( clientFd );
             --curSize;
