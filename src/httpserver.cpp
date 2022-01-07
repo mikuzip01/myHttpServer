@@ -144,7 +144,7 @@ int main(){
     addFdToEpoll_INLT( epollFd, pipeline[ 0 ] );
 
     struct epoll_event epollEvents[5];
-    ThreadPool threadPool(httpserver);
+    ThreadPool threadPool(httpserver, 16);
     printf("TheadPool create success\n");
 
     loadIndexTomemory("www/index.html");
