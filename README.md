@@ -23,4 +23,4 @@
 
 # [TODO LIST](TODOList.md)
 
-# [Benchark](benchMark.md)
+# [BenchMark](benchMark.md)
