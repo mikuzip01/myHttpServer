@@ -32,6 +32,7 @@ public:
             MutexLockGuard mutexLockGuard( mutex );
             workList.push_back( taskData );
         }
+        notifyOneThread();
     }
 
     void notifyOneThread(){

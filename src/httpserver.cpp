@@ -168,7 +168,6 @@ int main(){
                     dispAddrInfo( clientaddr );
                     #endif
                     threadPool.appendFd( TaskData( clientSocketFd, &timer ) );
-                    threadPool.notifyOneThread();
                 }
             }
             else if( epollEvents[i].data.fd != pipeline[ 0 ] ){ // 再一次被激活的长链接
@@ -179,7 +178,6 @@ int main(){
                 dispPeerConnection( epollEvents[i].data.fd );
                 #endif
                 threadPool.appendFd( TaskData( epollEvents[i].data.fd, &timer ) );
-                threadPool.notifyOneThread();
             }
             else{ // 收到时间信号
                 int sigNums = read( pipeline[ 0 ], signals, 128 );
