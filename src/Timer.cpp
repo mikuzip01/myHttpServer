@@ -19,21 +19,21 @@ void Timer::Node::setExpireTime( int _timeout ){
 bool Timer::addfd( int clientFd ){
     {
         MutexLockGuard mutexLockGuard( mutex );
-        if( curSize >= maxSize ) return false;
+        if( curSize >= maxSize ) return false; // FIXME 有逻辑问题
         if ( hashMap.find( clientFd ) == hashMap.end() ){ // 当前文件描述符不在队列中
             // 插入时间链表的末尾并将其位置记录到哈希表中
             hashMap[ clientFd ] = timeList.insert( timeList.end(), Node( clientFd, timeout ) );
             ++curSize;
             // 同时也要插入主线程的epoll中
-            addFdToEpoll_INET( epollFd, clientFd );
+            addFdToEpoll_INETONESHOT( epollFd, clientFd );
             #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - add client to keep alive:");
             dispPeerConnection( clientFd );
             #endif
         }
         else{ // 该文件描述符还没有过期且又再次发起了访问
-            timeList.erase( hashMap[ clientFd ] );
             hashMap[ clientFd ] = timeList.insert( timeList.end(), Node( clientFd, timeout ) );
+            resetOneshot_INETONESHOT( epollFd, clientFd );
             #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - flash client keep alive:");
             dispPeerConnection( clientFd );
@@ -77,6 +77,20 @@ void Timer::deleteFd( int clientFd ){
             timeList.erase( hashMap[ clientFd ] );
             hashMap.erase( clientFd );
             --curSize;
+        }
+    }
+}
+
+void Timer::forbidenFd( int clientFd ){
+    {
+        MutexLockGuard mutexLockGuard( mutex );
+        if( hashMap.find( clientFd ) != hashMap.end() ){ // 该fd存在
+            timeList.erase( hashMap[ clientFd ] );  // 将该FD从时间链表中移除
+            hashMap[ clientFd ] = timeList.end(); // 但保留在哈希表中的查找信息
+            #ifdef __PRINT_INFO_TO_DISP__
+            printf("\nTimer - forbiden client, it's in timer but not be expire:");
+            dispPeerConnection( clientFd );
+            #endif
         }
     }
 }

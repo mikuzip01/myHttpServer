@@ -76,7 +76,6 @@ int setFdNonblock( int fd ){
 void addFdToEpoll_INLT( int epollfd, int addedfd ){
     struct epoll_event epollEvent;
     memset( &epollEvent, 0, sizeof( epollEvent ) );
-    setFdNonblock( addedfd );
     epollEvent.data.fd = addedfd;
     epollEvent.events = ( EPOLLIN ); // 可读事件 + 电平触发模式
     epoll_ctl( epollfd, EPOLL_CTL_ADD, addedfd, &epollEvent); // socketfd在epoll_event需要设置在epoll_ctl()函数中也需要设置？
@@ -86,7 +85,6 @@ void addFdToEpoll_INLT( int epollfd, int addedfd ){
 void addFdToEpoll_INET( int epollfd, int addedfd ){
     struct epoll_event epollEvent;
     memset( &epollEvent, 0, sizeof( epollEvent ) );
-    setFdNonblock( addedfd );
     epollEvent.data.fd = addedfd;
     epollEvent.events = ( EPOLLIN | EPOLLET ); // 可读事件 + 边缘触发模式
     epoll_ctl( epollfd, EPOLL_CTL_ADD, addedfd, &epollEvent); // socketfd在epoll_event需要设置在epoll_ctl()函数中也需要设置？
@@ -95,10 +93,17 @@ void addFdToEpoll_INET( int epollfd, int addedfd ){
 void addFdToEpoll_INETONESHOT( int epollfd, int addedfd ){
     struct epoll_event epollEvent;
     memset( &epollEvent, 0, sizeof( epollEvent ) );
-    setFdNonblock( addedfd );
     epollEvent.data.fd = addedfd;
     epollEvent.events = ( EPOLLIN | EPOLLET | EPOLLONESHOT ); // 可读事件 + 边缘单次触发模式
     epoll_ctl( epollfd, EPOLL_CTL_ADD, addedfd, &epollEvent); // socketfd在epoll_event需要设置在epoll_ctl()函数中也需要设置？
+}
+
+void resetOneshot_INETONESHOT( int epollfd, int resetfd ){
+    struct epoll_event epollEvent;
+    memset( &epollEvent, 0, sizeof( epollEvent ) );
+    epollEvent.data.fd = resetfd;
+    epollEvent.events = ( EPOLLIN | EPOLLET | EPOLLONESHOT ); // 可读事件 + 边缘单次触发模式
+    epoll_ctl( epollfd, EPOLL_CTL_MOD, resetfd, &epollEvent);
 }
 
 void deleteFdFromEpoll( int epollfd, int targetfd ){

@@ -6,6 +6,7 @@ enable_testing()
 find_package(Threads)
 
 add_definitions(-D__PRINT_INFO_TO_DISP__)
+add_definitions(-D__LOG_INFO__)
 
 set(HttpServer_SOURCE_FILES
         src/httpserver.cpp
@@ -16,6 +17,7 @@ set(HttpServer_SOURCE_FILES
         src/Pages.cpp
         src/Timer.cpp
         src/Error.h
+        src/AsyncLoger.cpp
         )
 # add_executable(httpServer src/httpserver.cpp)
 add_executable(httpServer ${HttpServer_SOURCE_FILES})

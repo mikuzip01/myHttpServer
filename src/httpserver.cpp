@@ -20,6 +20,7 @@
 #include "Responser.h"
 #include "Timer.h"
 #include "Error.h"
+#include "AsyncLoger.h"
 
 
 using std::string; using std::exception; using std::runtime_error;
@@ -116,6 +117,7 @@ int main(){
     printf("socket create success\n");
     
     setPortReuse( serverSocketfd );
+    setFdNonblock( serverSocketfd );
 
     struct sockaddr_in ipaddr;
     ipaddr.sin_family = AF_INET;
@@ -144,7 +146,7 @@ int main(){
     addFdToEpoll_INLT( epollFd, pipeline[ 0 ] );
 
     struct epoll_event epollEvents[5];
-    ThreadPool threadPool(httpserver, 16);
+    ThreadPool threadPool(httpserver, 4);
     printf("TheadPool create success\n");
 
     loadIndexTomemory("www/index.html");
@@ -171,7 +173,7 @@ int main(){
                 }
             }
             else if( epollEvents[i].data.fd != pipeline[ 0 ] ){ // 再一次被激活的长链接
-                timer.deleteFd( epollEvents[i].data.fd ); // 防止复用的链接在较长时间的处理过程中（例如传大文件）时被定时器给关闭
+                timer.forbidenFd( epollEvents[i].data.fd ); // 防止复用的链接在较长时间的处理过程中（例如传大文件）时被定时器给关闭
                 #ifdef __PRINT_INFO_TO_DISP__
                 printf("\n");
                 printf("reused connection:\n");

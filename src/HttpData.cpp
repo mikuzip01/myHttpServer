@@ -16,7 +16,7 @@ void HttpData::parseData(){
 }
 
 void HttpData::parseStartLine(){
-    string firstLine( parseOneLine() );
+    string firstLine( std::move( parseOneLine() ) );
     vector<string> headerInfo;
     stringSplit( firstLine, headerInfo, " " );
     getRequestMethod( headerInfo );

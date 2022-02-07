@@ -53,7 +53,7 @@ AsyncLoger::AsyncLoger(std::string logName = "LogFile"):
     logFileFd = open( fileName.c_str(), O_WRONLY | O_CREAT , 777 );
     // 初始化空缓冲区
     for( int i = 0; i < 4; ++i ){
-        emptyBuffers.push_back(std::unique_ptr<Buffer>(new Buffer(BUFFERSIZE)));
+        emptyBuffers.push_back(std::unique_ptr<Buffer>(new Buffer(LOGBUFFERSIZE)));
     }
     // 指定起始缓冲区
     curBuffer = std::move(emptyBuffers.back());
@@ -122,9 +122,9 @@ int AsyncLoger::logInfo(std::string logLine){
         if ( curBuffer == nullptr ) return -1; // 缓冲区全满，直接丢弃日志信息
 
         // 有可用缓冲区，尝试写入
-        if( logLine.length() > BUFFERSIZE / 2 ){ // 过长（大于缓冲区一半长度的日志）的部分直接舍弃
-            memcpy( &logLine[BUFFERSIZE / 2] - 17, "Log Info Too Long", 17);
-            logSize = BUFFERSIZE / 2;
+        if( logLine.length() > LOGBUFFERSIZE / 2 ){ // 过长（大于缓冲区一半长度的日志）的部分直接舍弃
+            memcpy( &logLine[LOGBUFFERSIZE / 2] - 17, "Log Info Too Long", 17);
+            logSize = LOGBUFFERSIZE / 2;
         }
 
         if( curBuffer->appendAvailable(logSize + DATE_STRING_LEGTH) ){ // 当前缓冲区可用直接添加
@@ -162,6 +162,8 @@ inline void sprintCurTime(char* str, int len){
     strftime(str, len, "%Y%m%d%H%M%S", localtime(&t));
 }
 
+AsyncLoger LOGER("RunTimeLog");
+
 #ifdef _ASYNCLOGER_TEST_
 
 class TestData{
@@ -182,7 +184,6 @@ void* testFunc(void* args){
 }
 
 int main(){
-    AsyncLoger asyncLoger("testLog");
     TestData testData[4];
     for( int i = 0; i < 4; ++i ){
         testData[i].asyncLoger = &asyncLoger;

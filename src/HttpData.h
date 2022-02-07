@@ -18,7 +18,7 @@ using std::shared_ptr;
 extern const string NULLINFO;
 
 // 专门用于处理和客户机http数据的交互
-const int HTTPDATA_BUFFERSIZE = 64;
+const int HTTPDATA_BUFFERSIZE = 1024; // FIXME 这个值可以调整得更大一些，调试时使用的是较小值64
 const int LINE_BUFFERSIZE = 256;
 
 // 存储资源的根目录路径

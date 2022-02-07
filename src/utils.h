@@ -34,6 +34,8 @@ void addFdToEpoll_INLT( int epollfd, int addedfd );
 void addFdToEpoll_INET( int epollfd, int addedfd );
 // 向epoll中添加需要监听的文件描述符;可读事件配合边缘单次触发，防止在epoll中，正在被其他线程处理的客户端链接被探测到，导致客户端链接被重复传入线程池
 void addFdToEpoll_INETONESHOT( int epollfd, int addedfd );
+// 重置Epoll的oneshot设置
+void resetOneshot_INETONESHOT( int epollfd, int resetfd );
 // 从epoll中删除被监听的文件描述符
 void deleteFdFromEpoll( int epollfd, int targetfd );
 // 打印客户端的相关网络信息到屏幕上

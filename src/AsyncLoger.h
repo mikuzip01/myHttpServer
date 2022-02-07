@@ -18,7 +18,7 @@
 
 #define BUFLEN 256
 // 每个缓冲区的大小为1M
-static const int BUFFERSIZE = 1 * 1024 * 1024;
+static const int LOGBUFFERSIZE = 1 * 1024 * 1024;
 
 // 有效信息固定14个Char
 static const int DATE_STRING_LEGTH = 15;
@@ -60,4 +60,6 @@ private:
     std::queue<std::unique_ptr<Buffer>> toWriteBuffers;
     std::atomic<bool> running;
 };
+
+extern AsyncLoger LOGER;
 #endif

@@ -17,6 +17,8 @@ public:
     void deleteExpiredFd();
     // 删除指定的文件描述符
     void deleteFd( int clientFd );
+    // 屏蔽某个文件描述符使得其不被进行超时检查
+    void forbidenFd( int clientFd );
 
 private:
     // 用于保存每一个需要长链接的套接字的文件描述符，加入时间以及过期的时间
