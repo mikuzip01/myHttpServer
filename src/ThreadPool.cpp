@@ -6,24 +6,37 @@ void httpserver( int ); // 为什么一定要void*才能调用、pthread create
 ThreadPool::ThreadPool(void (*task)(TaskData), int threadNum, int maxWorkListLen) : task(task), threadNum( threadNum ), maxWorkListLen( maxWorkListLen ),
     threads( threadNum ), running( true ) {
         for ( int i = 0; i < threadNum; ++i){
-            pthread_create( &threads[ i ] , nullptr , worker, this); // fixme为什么不接受成员函数？？????????？？？？?????
+            pthread_create( &threads[ i ] , nullptr , workerWarper, this);
         }
     }
 
-void* ThreadPool::worker( void* args ){
-    ThreadPool* threadPool = reinterpret_cast< ThreadPool* > ( args );
-    while( threadPool->running ){
+ThreadPool::~ThreadPool(){
+    running = false;
+    cond.notifyAll();
+    for( pthread_t threadId : threads ){
+        pthread_join( threadId, nullptr );
+    }
+}
 
+void* ThreadPool::workerWarper( void* args ){
+    ThreadPool* threadPool = reinterpret_cast< ThreadPool* > ( args );
+    threadPool->worker();
+    return nullptr;
+}
+
+void ThreadPool::worker(){
+    while( running ){
         TaskData taskData( -1, nullptr );
         {
-            MutexLockGuard mutexLockGuard( threadPool->mutex );
-            while( threadPool->workList.empty() ){
-                threadPool->cond.wait( threadPool->mutex );
+            MutexLockGuard mutexLockGuard( mutex );
+            while( workList.empty() && running ){
+                cond.wait( mutex );
             }
-
-            taskData = threadPool->workList.front();
-            threadPool->workList.pop_front();
+            if( !running ) return;
+            taskData = workList.front();
+            workList.pop_front();
         }
-        threadPool->task( taskData ); // 执行设定的用户task函数的回调
+        task( taskData ); // 执行设定的用户task函数的回调
     }
+    return;
 }
