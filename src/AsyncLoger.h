@@ -42,11 +42,19 @@ private:
 // 支持多线程的异步日志记录器
 class AsyncLoger{
 public:
-    AsyncLoger(std::string);
-    ~AsyncLoger();
+    // 单例模式
+    static void getInstance(std::shared_ptr<AsyncLoger>&);
     // 用于前端线程提交日志信息
     int logInfo(std::string);
 private:
+    AsyncLoger(std::string);
+    ~AsyncLoger();
+    // 单例模式
+    static std::shared_ptr<AsyncLoger> instance;
+    static MutexLock singletonMutex;
+    AsyncLoger& operator=(const AsyncLoger&) = delete;
+    AsyncLoger(const AsyncLoger&) = delete;
+    static void Deleter(AsyncLoger* );
     // 后端的写入线程
     void threadFun();
     static void* threadWrap(void*);
@@ -60,6 +68,4 @@ private:
     std::queue<std::unique_ptr<Buffer>> toWriteBuffers;
     std::atomic<bool> running;
 };
-
-extern AsyncLoger LOGER;
 #endif

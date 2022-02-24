@@ -1,5 +1,8 @@
 #include "AsyncLoger.h"
 
+std::shared_ptr<AsyncLoger> AsyncLoger::instance;
+MutexLock AsyncLoger::singletonMutex;
+
 Buffer::Buffer(size_t _bufferSize): bufferSize(_bufferSize), end(0){
     dataPtr = new char[bufferSize];
 }
@@ -162,31 +165,42 @@ inline void sprintCurTime(char* str, int len){
     strftime(str, len, "%Y%m%d%H%M%S", localtime(&t));
 }
 
-AsyncLoger LOGER("RunTimeLog");
+void AsyncLoger::getInstance( std::shared_ptr<AsyncLoger>& sPtr ){
+    {
+        MutexLockGuard mutexLockGuard( singletonMutex );
+        if( !instance ){
+            instance = std::shared_ptr<AsyncLoger>(new AsyncLoger("RunTimeLog"), AsyncLoger::Deleter);
+        }
+        sPtr = instance;
+    }
+}
+
+void AsyncLoger::Deleter(AsyncLoger* ptr){
+    delete ptr;
+}
 
 #ifdef _ASYNCLOGER_TEST_
 
 class TestData{
 public:
     pthread_t threadId;
-    AsyncLoger* asyncLoger;
 };
 
 void* testFunc(void* args){
     TestData& testData = *reinterpret_cast<TestData*>(args);
-    AsyncLoger& log = *(testData.asyncLoger);
+    std::shared_ptr<AsyncLoger> log;
+    AsyncLoger::getInstance(log);
     pthread_t threadId = testData.threadId;
     char temp[255];
-    for( int i = 0; i < 100; ++i ){
+    for( int i = 0; i < 1000; ++i ){
         sprintf( temp, "thread %d log a random number %d\n", static_cast<int>(threadId), rand() );
-        log.logInfo(temp);
+        log->logInfo(temp);
     }
 }
 
 int main(){
     TestData testData[4];
     for( int i = 0; i < 4; ++i ){
-        testData[i].asyncLoger = &asyncLoger;
         pthread_create( &(testData[i].threadId), nullptr, testFunc, &testData[i] );
     }
     for( int i = 0; i < 4; ++i ){
