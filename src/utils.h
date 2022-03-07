@@ -17,7 +17,7 @@ extern char *memory_index_page;
 
 void bufferPrinter(char* buffer, const int bufferSize);
 void parseLineFromSocket( char* buffer, const int buffSisze);
-void setPortReuse( int socketfd );
+void setAddrReuse( int socketfd );
 void sendHello( int sockedfd );
 void dispAddrInfo( struct sockaddr_in &addr);
 

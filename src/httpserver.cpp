@@ -116,7 +116,7 @@ int main(){
     if( serverSocketfd == -1 ) throw runtime_error("socket create failed\n");
     printf("socket create success\n");
     
-    setPortReuse( serverSocketfd );
+    setAddrReuse( serverSocketfd );
     setFdNonblock( serverSocketfd );
 
     struct sockaddr_in ipaddr;

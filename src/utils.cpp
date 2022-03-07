@@ -7,7 +7,7 @@ void bufferPrinter(char* buffer, const int bufferSize){
     printf("%s\n", buffer);
 }
 
-void setPortReuse( int socketfd ){
+void setAddrReuse( int socketfd ){
     int opt = 1;
     int len = sizeof(opt);
     setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &opt, len);
