@@ -30,6 +30,12 @@ bool Timer::addfd( int clientFd ){
             printf("\nTimer - add client to keep alive:");
             dispPeerConnection( clientFd );
             #endif
+            #ifdef __LOG_INFO__
+            std::string logline("Timer - add client to keep alive: ");
+            dispPeerConnection( clientFd, logline );
+            loger->logInfo(logline);
+            #endif
+            
         }
         else{ // 该文件描述符还没有过期且又再次发起了访问
             hashMap[ clientFd ] = timeList.insert( timeList.end(), Node( clientFd, timeout ) );
@@ -37,6 +43,11 @@ bool Timer::addfd( int clientFd ){
             #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - flash client keep alive:");
             dispPeerConnection( clientFd );
+            #endif
+            #ifdef __LOG_INFO__
+            std::string logline("Timer - flash client keep alive: ");
+            dispPeerConnection( clientFd, logline );
+            loger->logInfo(logline);
             #endif
         }
         return true;
@@ -56,6 +67,12 @@ void Timer::deleteExpiredFd(){ // 删除过期的链接
             printf("\nTimer - delete expire keep alive:");
             dispPeerConnection( timeList.front().clientFd() );
             #endif
+            #ifdef __LOG_INFO__
+            std::string logline("Timer - delete expire keep alive: ");
+            dispPeerConnection( timeList.front().clientFd(), logline );
+            loger->logInfo(logline);
+            #endif
+
             close( timeList.front().clientFd() );
             timeList.pop_front();
             --curSize;
@@ -74,6 +91,12 @@ void Timer::deleteFd( int clientFd ){
             printf("\nTimer - delete client keep alive:");
             dispPeerConnection( clientFd );
             #endif
+            #ifdef __LOG_INFO__
+            std::string logline("Timer - delete client keep alive: ");
+            dispPeerConnection( clientFd, logline );
+            loger->logInfo(logline);
+            #endif
+
             timeList.erase( hashMap[ clientFd ] );
             hashMap.erase( clientFd );
             --curSize;
@@ -90,6 +113,11 @@ void Timer::forbidenFd( int clientFd ){
             #ifdef __PRINT_INFO_TO_DISP__
             printf("\nTimer - forbiden client, it's in timer but not be expire:");
             dispPeerConnection( clientFd );
+            #endif
+            #ifdef __LOG_INFO__
+            std::string logline("Timer - forbiden client, it's in timer but not be expire: ");
+            dispPeerConnection( clientFd, logline );
+            loger->logInfo(logline);
             #endif
         }
     }

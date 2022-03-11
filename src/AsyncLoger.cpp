@@ -118,7 +118,7 @@ void* AsyncLoger::threadWrap(void* args){
 }
 
 // 用于前端线程提交日志信息
-int AsyncLoger::logInfo(std::string logLine){
+int AsyncLoger::logInfo(std::string& logLine){
     size_t logSize = logLine.length(); 
     {
         MutexLockGuard mutexLockGuard(mutex);
@@ -158,6 +158,10 @@ int AsyncLoger::logInfo(std::string logLine){
             }// else 无空闲缓冲区可用，丢弃日志
         }
     }
+}
+
+int AsyncLoger::logInfoTempVar(std::string logline){
+    logInfo( logline );
 }
 
 inline void sprintCurTime(char* str, int len){

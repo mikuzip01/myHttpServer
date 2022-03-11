@@ -45,7 +45,8 @@ public:
     // 单例模式
     static void getInstance(std::shared_ptr<AsyncLoger>&);
     // 用于前端线程提交日志信息
-    int logInfo(std::string);
+    int logInfo(std::string&);
+    int logInfoTempVar( std::string );
 private:
     AsyncLoger(std::string);
     ~AsyncLoger();

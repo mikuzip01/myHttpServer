@@ -40,6 +40,12 @@ void dispAddrInfo( struct sockaddr_in &addr){
     printf("client addr:%s, port:%d\n", inet_ntoa( addr.sin_addr ), ntohs( addr.sin_port ) );
 }
 
+void sprintAddrInfo( struct sockaddr_in &addr, std::string& str){
+    char cs[128];
+    sprintf(cs, "client addr:%s, port:%d\n", inet_ntoa( addr.sin_addr ), ntohs( addr.sin_port ) );
+    str += cs;
+}
+
 bool fileExist(const char path [] ){
     struct stat staticFileState;
     int ret = stat( path, &staticFileState );
@@ -115,4 +121,11 @@ void dispPeerConnection( int clientFd ){
     socklen_t clientaddrLength = sizeof( clientaddr );
     getpeername( clientFd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength);
     dispAddrInfo( clientaddr );
+}
+
+void dispPeerConnection( int clientFd , std::string& str){
+    struct sockaddr_in clientaddr;
+    socklen_t clientaddrLength = sizeof( clientaddr );
+    getpeername( clientFd, reinterpret_cast< struct sockaddr* >(&clientaddr), &clientaddrLength);
+    sprintAddrInfo( clientaddr, str);
 }

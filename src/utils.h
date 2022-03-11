@@ -20,6 +20,7 @@ void parseLineFromSocket( char* buffer, const int buffSisze);
 void setAddrReuse( int socketfd );
 void sendHello( int sockedfd );
 void dispAddrInfo( struct sockaddr_in &addr);
+void sprintAddrInfo(  struct sockaddr_in &addr, std::string& str );
 
 // 输入文件路径，判断文件是否存在
 bool fileExist(const char [] );
@@ -40,5 +41,6 @@ void resetOneshot_INETONESHOT( int epollfd, int resetfd );
 void deleteFdFromEpoll( int epollfd, int targetfd );
 // 打印客户端的相关网络信息到屏幕上
 void dispPeerConnection( int clientFd );
+void dispPeerConnection( int clientFd , std::string& str);
 
 #endif

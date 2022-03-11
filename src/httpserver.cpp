@@ -55,6 +55,8 @@ void addSingal( int sig ){
 
 void httpserver( TaskData taskData ){
     int clientSocketFd = taskData.clientfd;
+    std::shared_ptr<AsyncLoger> loger;
+    AsyncLoger::getInstance(loger);
     try{
         HttpData httpData( clientSocketFd );
         httpData.parseData();
@@ -63,10 +65,14 @@ void httpserver( TaskData taskData ){
             #ifdef __PRINT_INFO_TO_DISP__
             printf("bad request\n"); 
             #endif
+            #ifdef __LOG_INFO__
+            #endif
             return; }
         if( httpData.getRequestMethod() == HttpData::UNSUPPORT ) { 
             #ifdef __PRINT_INFO_TO_DISP__
             printf("unsupport method\n"); 
+            #endif
+            #ifdef __LOG_INFO__
             #endif
             return; }
 
@@ -74,6 +80,9 @@ void httpserver( TaskData taskData ){
 
         #ifdef __PRINT_INFO_TO_DISP__
         printf("requset method: %s, url: %s, http verison: %s\n", httpData.getRequestMethod_string().c_str(), httpData.getUrl().c_str(), httpData.getVersion().c_str());
+        #endif
+        #ifdef __LOG_INFO__
+        loger->logInfoTempVar(std::string("requset method: ") + httpData.getRequestMethod_string() + ", url:" + httpData.getUrl() + ", http verison: " +  httpData.getVersion() + "\n");
         #endif
         // printf("%s\n", httpData.getUserAgent().c_str() );
 
@@ -110,11 +119,13 @@ int main(){
 
     string ip = "127.0.0.1";
     int port = 12345;
-
+    std::shared_ptr<AsyncLoger> loger;
+    AsyncLoger::getInstance(loger);
 
     int serverSocketfd = socket( AF_INET, SOCK_STREAM, 0 );
     if( serverSocketfd == -1 ) throw runtime_error("socket create failed\n");
     printf("socket create success\n");
+    loger->logInfoTempVar("socket create success\n");
     
     setAddrReuse( serverSocketfd );
     setFdNonblock( serverSocketfd );
@@ -128,14 +139,18 @@ int main(){
     int ret = bind( serverSocketfd, reinterpret_cast< struct sockaddr*>( &ipaddr ), sizeof( ipaddr ) );
     if( ret == -1 ) throw runtime_error("bind ipaddr failed\n");
     printf("bind ipaddr create success\n");
+    loger->logInfoTempVar("bind ipaddr create success\n");
+    
 
     ret = listen( serverSocketfd, 20 );
     if( ret == -1 ) throw runtime_error("call listen failed\n");
     printf("listen create success\n");
+    loger->logInfoTempVar("listen create success\n");
 
     ret = pipe( pipeline );
     if( ret == -1 ) throw runtime_error("pipeline create failed\n");
     printf("pipeline create success\n");
+    loger->logInfoTempVar("pipeline create success\n");
 
     struct sockaddr_in clientaddr;
     socklen_t clientaddrLength = sizeof( clientaddr );
@@ -148,9 +163,11 @@ int main(){
     struct epoll_event epollEvents[5];
     ThreadPool threadPool(httpserver, 4);
     printf("TheadPool create success\n");
+    loger->logInfoTempVar("TheadPool create success\n");
 
     loadIndexTomemory("www/index.html");
     printf("load index page to memory success\n");
+    loger->logInfoTempVar("load index page to memory success\n");
 
     addSingal( SIGALRM );
     setFdNonblock( pipeline[ 1 ] );
@@ -169,6 +186,12 @@ int main(){
                     printf("\n");
                     dispAddrInfo( clientaddr );
                     #endif
+                    #ifdef __LOG_INFO__
+                    std::string logline;
+                    dispPeerConnection(epollEvents[i].data.fd, logline);
+                    loger->logInfo(logline);
+                    #endif
+                    
                     threadPool.appendFd( TaskData( clientSocketFd, &timer ) );
                 }
             }
@@ -179,6 +202,12 @@ int main(){
                 printf("reused connection:\n");
                 dispPeerConnection( epollEvents[i].data.fd );
                 #endif
+                #ifdef __LOG_INFO__
+                std::string logline("reused connection: ");
+                dispPeerConnection(epollEvents[i].data.fd, logline);
+                loger->logInfo(logline);
+                #endif
+
                 threadPool.appendFd( TaskData( epollEvents[i].data.fd, &timer ) );
             }
             else{ // 收到时间信号

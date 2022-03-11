@@ -4,13 +4,15 @@
 #include <sys/time.h>
 #include <unordered_map>
 #include <list>
+#include <memory>
+#include "AsyncLoger.h"
 #include "Mutex.h" // 互斥锁类
 #include "utils.h" // epoll的操作函数
 
 class Timer{
 public:
     // _timeout表示长连接的超时时间; _maxSize表示允许的长链接的最大数量上限，默认1000条
-    Timer(int _epollfd, int _timeout , int _maxSize = 1000 ) :epollFd( _epollfd ), timeout( _timeout ), maxSize( _maxSize ), curSize( 0 ) {}
+    Timer(int _epollfd, int _timeout , int _maxSize = 1000 ) :epollFd( _epollfd ), timeout( _timeout ), maxSize( _maxSize ), curSize( 0 ) { AsyncLoger::getInstance( loger ); }
     // 添加需要长链接的客户端，添加成功返回true，失败返回false
     bool addfd( int clientFd );
     // 检查处理过期的客户端连接
@@ -53,6 +55,8 @@ private:
     int maxSize;
     // Epoll的文件描述符
     int epollFd;
+    // 日志记录
+    std::shared_ptr<AsyncLoger> loger;
 
 };
 
