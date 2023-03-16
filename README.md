@@ -8,7 +8,17 @@
 - 操作系统: Ubuntu 20.04
 - 编译器: g++ 9.3.0
 - 版本控制: git
-- 自动化构建: cmake
+- 自动化构建: make
+
+# 如何使用
+
+首先将工作路径切换到该工程下，使用make命令编译整个项目的源码，然后运行httpserver文件
+
+```bash
+cd PATH_TO_MYHTTPSERVER
+make -j`nproc`
+./httpserver
+```
 
 # 核心技术
 
