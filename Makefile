@@ -22,7 +22,7 @@ CPP_LINK_PTTHREAD:=					-pthread
 CPPFLAGS:=							-std=c++20
 CPPFLAGS+=							-D__PRINT_INFO_TO_DISP__
 CPPFLAGS+=							-D__LOG_INFO__
-CPPFLAGS+=							-Isrc/
+CPPFLAGS+=							-Iinclude/
 
 Q		:= 							
 
